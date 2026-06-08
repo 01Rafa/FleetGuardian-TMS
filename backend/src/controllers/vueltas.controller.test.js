@@ -1,6 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { prepareCreateVueltaData } from './vueltas.controller.js'
+import { buildNextCodigo, prepareCreateVueltaData } from './vueltas.controller.js'
+
+test('buildNextCodigo increments the latest global trip code', () => {
+  assert.equal(buildNextCodigo('VLT-2026-', undefined), 'VLT-2026-001')
+  assert.equal(buildNextCodigo('VLT-2026-', 'VLT-2026-008'), 'VLT-2026-009')
+})
 
 test('prepareCreateVueltaData builds an atomic vuelta create payload with totals', () => {
   const result = prepareCreateVueltaData({

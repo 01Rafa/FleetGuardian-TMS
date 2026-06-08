@@ -2,15 +2,19 @@ import prisma from '../lib/prisma.js'
 import { recalcularVuelta } from '../lib/recalcularVuelta.js'
 import { catchAsync } from '../middleware/errorHandler.js'
 
-async function generarCodigo(empresaId) {
+export function buildNextCodigo(prefix, lastCodigo) {
+  const next = lastCodigo ? parseInt(lastCodigo.slice(prefix.length), 10) + 1 : 1
+  return `${prefix}${String(next).padStart(3, '0')}`
+}
+
+async function generarCodigo() {
   const year = new Date().getFullYear()
   const prefix = `VLT-${year}-`
   const last = await prisma.vuelta.findFirst({
-    where: { empresaId, codigo: { startsWith: prefix } },
+    where: { codigo: { startsWith: prefix } },
     orderBy: { codigo: 'desc' },
   })
-  const next = last ? parseInt(last.codigo.slice(prefix.length), 10) + 1 : 1
-  return `${prefix}${String(next).padStart(3, '0')}`
+  return buildNextCodigo(prefix, last?.codigo)
 }
 
 export function prepareCreateVueltaData({ body, empresaId, codigo }) {
@@ -63,7 +67,7 @@ export const listVueltas = catchAsync(async (req, res) => {
 
 export const createVuelta = catchAsync(async (req, res) => {
   const { empresaId } = req.user
-  const codigo = await generarCodigo(empresaId)
+  const codigo = await generarCodigo()
   const vuelta = await prisma.vuelta.create({
     data: prepareCreateVueltaData({ body: req.body, empresaId, codigo }),
     include: {
