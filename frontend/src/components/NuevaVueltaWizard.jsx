@@ -55,34 +55,34 @@ export default function NuevaVueltaWizard() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const vuelta = await vueltasApi.create({
+      return vueltasApi.create({
         camionId: info.camionId,
         conductorPrincipalId: info.conductorPrincipalId,
         ...(info.conductorSecundarioId ? { conductorSecundarioId: info.conductorSecundarioId } : {}),
         baseSalida: info.baseSalida,
         fechaSalida: new Date(info.fechaSalida).toISOString(),
+        tramos: tramos.map((tramo, i) => {
+          const t = { ...tramo }
+          const broker = t.broker
+          delete t.tempId
+          delete t.broker
+          return {
+            ...t,
+            orden: i + 1,
+            brokerId: broker?.id ?? null,
+            numeroCarga: t.numeroCarga || null,
+            fleteCobrado: Number(t.fleteCobrado),
+            kmRecorridos: t.kmRecorridos ? Number(t.kmRecorridos) : null,
+            cargaTon: t.cargaTon ? Number(t.cargaTon) : null,
+            fechaHora: t.fechaHora ? new Date(t.fechaHora).toISOString() : null,
+          }
+        }),
+        gastos: gastos.map(gasto => ({ ...gasto, monto: Number(gasto.monto) })),
       })
-      for (let i = 0; i < tramos.length; i++) {
-        const { tempId, broker, ...t } = tramos[i]
-        await vueltasApi.createTramo(vuelta.id, {
-          ...t,
-          orden: i + 1,
-          brokerId: broker?.id ?? null,
-          numeroCarga: t.numeroCarga || null,
-          fleteCobrado: Number(t.fleteCobrado),
-          kmRecorridos: t.kmRecorridos ? Number(t.kmRecorridos) : null,
-          cargaTon: t.cargaTon ? Number(t.cargaTon) : null,
-          fechaHora: t.fechaHora ? new Date(t.fechaHora).toISOString() : null,
-        })
-      }
-      for (const g of gastos) {
-        await vueltasApi.createGasto(vuelta.id, { ...g, monto: Number(g.monto) })
-      }
-      return vuelta
     },
-    onSuccess: (vuelta) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['vueltas'] })
-      navigate(`/vueltas/${vuelta.id}`)
+      navigate('/vueltas')
     },
   })
 
@@ -100,7 +100,9 @@ export default function NuevaVueltaWizard() {
         const { conductor } = await sugerenciasApi.byConductorPrincipal(conductorId)
         setHints(h => ({ ...h, conductorSecundario: conductor ?? null }))
       }
-    } catch {}
+    } catch {
+      // Suggestions are optional.
+    }
   }
 
   const onCamionChange = async (camionId) => {
@@ -111,7 +113,9 @@ export default function NuevaVueltaWizard() {
       const { conductor } = await sugerenciasApi.byCamion(camionId)
       setHints(h => ({ ...h, conductorPrincipal: conductor ?? null }))
       if (conductor && !currentConductorId) setInfo(i => ({ ...i, conductorPrincipalId: conductor.id }))
-    } catch {}
+    } catch {
+      // Suggestions are optional.
+    }
   }
 
   const onShowConductor2 = async () => {
@@ -121,7 +125,9 @@ export default function NuevaVueltaWizard() {
         const { conductor } = await sugerenciasApi.byConductorPrincipal(info.conductorPrincipalId)
         setHints(h => ({ ...h, conductorSecundario: conductor ?? null }))
         if (conductor) setInfo(i => ({ ...i, conductorSecundarioId: conductor.id }))
-      } catch {}
+      } catch {
+        // Suggestions are optional.
+      }
     }
   }
 

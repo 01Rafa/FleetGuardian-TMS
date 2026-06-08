@@ -13,6 +13,23 @@ async function generarCodigo(empresaId) {
   return `${prefix}${String(next).padStart(3, '0')}`
 }
 
+export function prepareCreateVueltaData({ body, empresaId, codigo }) {
+  const { tramos = [], gastos = [], ...vueltaData } = body
+  const ingresoTotal = tramos.reduce((sum, tramo) => sum + Number(tramo.fleteCobrado ?? 0), 0)
+  const gastoTotal = gastos.reduce((sum, gasto) => sum + Number(gasto.monto ?? 0), 0)
+
+  return {
+    ...vueltaData,
+    empresaId,
+    codigo,
+    ingresoTotal,
+    gastoTotal,
+    rentabilidadNeta: ingresoTotal - gastoTotal,
+    ...(tramos.length ? { tramos: { create: tramos } } : {}),
+    ...(gastos.length ? { gastos: { create: gastos } } : {}),
+  }
+}
+
 export const listVueltas = catchAsync(async (req, res) => {
   const { empresaId } = req.user
   const { estado, camionId, fechaDesde, fechaHasta, brokerId } = req.query
@@ -48,8 +65,13 @@ export const createVuelta = catchAsync(async (req, res) => {
   const { empresaId } = req.user
   const codigo = await generarCodigo(empresaId)
   const vuelta = await prisma.vuelta.create({
-    data: { ...req.body, empresaId, codigo },
-    include: { camion: true, conductorPrincipal: true, conductorSecundario: true },
+    data: prepareCreateVueltaData({ body: req.body, empresaId, codigo }),
+    include: {
+      camion: true,
+      conductorPrincipal: true,
+      conductorSecundario: true,
+      tramos: { orderBy: { orden: 'asc' }, select: { destino: true, numeroCarga: true } },
+    },
   })
   res.status(201).json(vuelta)
 })
