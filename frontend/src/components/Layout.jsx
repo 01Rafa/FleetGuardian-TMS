@@ -134,7 +134,7 @@ export function Layout({ children }) {
             <div>
               <div className="font-serif text-gold leading-tight" style={{ fontSize: 15 }}>Fleet Guardian</div>
               <div style={{ fontSize: 9, color: '#888580', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 2 }}>
-                Dispatch Services
+                TMS Services
               </div>
             </div>
           </div>
