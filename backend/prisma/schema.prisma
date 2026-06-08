@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Empresa {
+  id          String      @id @default(uuid())
+  nombre      String
+  ruc         String?
+  dotNumber   String?
+  phone       String?
+  plan        String      @default("basic")
+  creadoEn    DateTime    @default(now())
+  camiones       Camion[]
+  conductores    Conductor[]
+  vueltas        Vuelta[]
+  usuarios       Usuario[]
+  brokers        Broker[]
+  notificaciones Notificacion[]
+}
+
+model Usuario {
+  id        String   @id @default(uuid())
+  empresaId String
+  empresa   Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  nombre    String
+  email     String   @unique
+  password  String
+  rol       String   @default("dispatcher")
+  creadoEn  DateTime @default(now())
+
+  @@index([empresaId])
+}
+
+model Camion {
+  id                      String          @id @default(uuid())
+  empresaId               String
+  empresa                 Empresa         @relation(fields: [empresaId], references: [id])
+  placa                   String
+  modelo                  String
+  anio                    Int?
+  capacidadTon            Float?
+  tipo                    String
+  estado                  String          @default("disponible")
+  vin                     String?
+  color                   String?
+  fechaCompra             DateTime?
+  vencimientoRegistracion DateTime?
+  vencimientoSeguro       DateTime?
+  vencimientoInspeccion   DateTime?
+  notas                   String?
+  dotInspectionLastDate     DateTime?
+  stateInspectionLastDate   DateTime?
+  brakeInspectionLastDate   DateTime?
+  ucrLastDate               DateTime?
+  dotBiennualUpdate         DateTime?
+  registrationExpiry        DateTime?
+  iftaExpiry                DateTime?
+  irpExpiry                 DateTime?
+  liabilityInsuranceExpiry  DateTime?
+  cargoInsuranceExpiry      DateTime?
+  bobtailInsuranceExpiry    DateTime?
+  epaRefrigerantExpiry      DateTime?
+  vueltas                 Vuelta[]
+  mantenimientos          Mantenimiento[]
+  piezas                  Pieza[]
+
+  @@index([empresaId])
+}
+
+model Mantenimiento {
+  id                   String    @id @default(uuid())
+  camionId             String
+  camion               Camion    @relation(fields: [camionId], references: [id], onDelete: Cascade)
+  tipo                 String
+  descripcion          String
+  costo                Float     @default(0)
+  proveedor            String?
+  fecha                DateTime
+  proximoMantenimiento DateTime?
+  creadoEn             DateTime  @default(now())
+}
+
+model Pieza {
+  id          String   @id @default(uuid())
+  camionId    String
+  camion      Camion   @relation(fields: [camionId], references: [id], onDelete: Cascade)
+  nombre      String
+  numeroParte String?
+  proveedor   String?
+  costo       Float
+  cantidad    Int      @default(1)
+  fecha       DateTime
+  notas       String?
+  creadoEn    DateTime @default(now())
+}
+
+model Conductor {
+  id                  String    @id @default(uuid())
+  empresaId           String
+  empresa             Empresa   @relation(fields: [empresaId], references: [id])
+  nombre              String
+  licencia            String?
+  telefono            String?
+  estado              String    @default("activo")
+  cdlNumber           String?
+  cdlState            String?
+  cdlExpiry           DateTime?
+  medicalExamExpiry   DateTime?
+  drugTestLastDate    DateTime?
+  alcoholTestLastDate DateTime?
+  mvrLastDate         DateTime?
+  hazmatExpiry        DateTime?
+  twicExpiry          DateTime?
+  annualReviewDate    DateTime?
+  safetyTrainingDate  DateTime?
+  vueltasPrincipal    Vuelta[]  @relation("VueltaConductorPrincipal")
+  vueltasSecundario   Vuelta[]  @relation("VueltaConductorSecundario")
+
+  @@index([empresaId])
+}
+
+model Vuelta {
+  id                    String      @id @default(uuid())
+  empresaId             String
+  empresa               Empresa     @relation(fields: [empresaId], references: [id])
+  camionId              String
+  camion                Camion      @relation(fields: [camionId], references: [id])
+  conductorPrincipalId  String
+  conductorPrincipal    Conductor   @relation("VueltaConductorPrincipal", fields: [conductorPrincipalId], references: [id])
+  conductorSecundarioId String?
+  conductorSecundario   Conductor?  @relation("VueltaConductorSecundario", fields: [conductorSecundarioId], references: [id])
+  codigo                String      @unique
+  baseSalida            String
+  fechaSalida           DateTime
+  fechaRegreso          DateTime?
+  estado                String      @default("planificada")
+  ingresoTotal          Float       @default(0)
+  gastoTotal            Float       @default(0)
+  rentabilidadNeta      Float       @default(0)
+  notas                 String?
+  creadoEn              DateTime    @default(now())
+  tramos                Tramo[]
+  gastos                Gasto[]
+
+  @@index([empresaId])
+}
+
+model Tramo {
+  id           String    @id @default(uuid())
+  vueltaId     String
+  vuelta       Vuelta    @relation(fields: [vueltaId], references: [id], onDelete: Cascade)
+  brokerId     String?
+  broker       Broker?   @relation(fields: [brokerId], references: [id])
+  orden        Int
+  origen       String
+  destino      String
+  numeroCarga  String?
+  kmRecorridos Float?
+  cargaTon     Float?
+  fleteCobrado Float     @default(0)
+  tipo         String    @default("carga")
+  fechaHora    DateTime?
+  notas        String?
+  gastos       Gasto[]
+}
+
+model Broker {
+  id        String   @id @default(uuid())
+  empresaId String
+  empresa   Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  nombre    String
+  creadoEn  DateTime @default(now())
+  tramos    Tramo[]
+
+  @@unique([empresaId, nombre])
+  @@index([empresaId])
+}
+
+model Notificacion {
+  id          String   @id @default(uuid())
+  empresaId   String
+  empresa     Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  tipo        String
+  titulo      String
+  mensaje     String
+  entidadTipo String?
+  entidadId   String?
+  leida       Boolean  @default(false)
+  creadoEn    DateTime @default(now())
+
+  @@index([empresaId])
+  @@index([empresaId, leida])
+}
+
+model Gasto {
+  id          String   @id @default(uuid())
+  vueltaId    String
+  vuelta      Vuelta   @relation(fields: [vueltaId], references: [id], onDelete: Cascade)
+  tramoId     String?
+  tramo       Tramo?   @relation(fields: [tramoId], references: [id])
+  categoria   String
+  monto       Float
+  descripcion String?
+  fecha       DateTime @default(now())
+}
