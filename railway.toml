@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd backend && npm ci && npx prisma generate"
+buildCommand = "cd backend && npx prisma generate"
 
 [deploy]
 startCommand = "cd backend && node src/index.js"
