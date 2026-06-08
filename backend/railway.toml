@@ -4,6 +4,6 @@ buildCommand = "npx prisma generate"
 
 [deploy]
 startCommand = "node src/index.js"
-preDeployCommand = "DATABASE_URL=$DB_DIRECT_URL npx prisma db push"
+preDeployCommand = "DATABASE_URL=$DIRECT_URL npx prisma db push"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30

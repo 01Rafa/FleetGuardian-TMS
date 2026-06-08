@@ -4,6 +4,6 @@ buildCommand = "cd backend && npx prisma generate"
 
 [deploy]
 startCommand = "cd backend && node src/index.js"
-preDeployCommand = "cd backend && DATABASE_URL=$DB_DIRECT_URL npx prisma db push"
+preDeployCommand = "cd backend && DATABASE_URL=$DIRECT_URL npx prisma db push"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30
