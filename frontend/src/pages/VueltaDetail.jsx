@@ -58,7 +58,11 @@ export default function VueltaDetail() {
 
   const deleteMutation = useMutation({
     mutationFn: () => vueltasApi.delete(id),
-    onSuccess: () => navigate('/vueltas'),
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: ['vuelta', id] })
+      qc.removeQueries({ queryKey: ['vueltas'] })
+      navigate('/vueltas')
+    },
   })
 
   const createTramoMutation = useMutation({
@@ -131,7 +135,9 @@ export default function VueltaDetail() {
       const { camion } = await sugerenciasApi.byConductor(conductorId)
       setInfoHints(h => ({ ...h, camion: camion ?? null }))
       if (camion && !currentCamionId) setInfoForm(s => ({ ...s, camionId: camion.id }))
-    } catch {}
+    } catch {
+      // Suggestions are optional.
+    }
   }
 
   const onInfoCamionChange = async (camionId) => {
@@ -142,7 +148,9 @@ export default function VueltaDetail() {
       const { conductor } = await sugerenciasApi.byCamion(camionId)
       setInfoHints(h => ({ ...h, conductorPrincipal: conductor ?? null }))
       if (conductor && !currentConductorId) setInfoForm(s => ({ ...s, conductorPrincipalId: conductor.id }))
-    } catch {}
+    } catch {
+      // Suggestions are optional.
+    }
   }
 
   const onShowConductor2Edit = async () => {
@@ -152,7 +160,9 @@ export default function VueltaDetail() {
         const { conductor } = await sugerenciasApi.byConductorPrincipal(infoForm.conductorPrincipalId)
         setInfoHints(h => ({ ...h, conductorSecundario: conductor ?? null }))
         if (conductor && !infoForm.conductorSecundarioId) setInfoForm(s => ({ ...s, conductorSecundarioId: conductor.id }))
-      } catch {}
+      } catch {
+        // Suggestions are optional.
+      }
     }
   }
 
