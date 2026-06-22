@@ -164,9 +164,11 @@ model Tramo {
   cargaTon     Float?
   fleteCobrado Float     @default(0)
   tipo         String    @default("carga")
-  fechaHora    DateTime?
-  notas        String?
-  gastos       Gasto[]
+  fechaHora      DateTime?
+  notas          String?
+  distanceMillas Float?
+  distanceKm     Float?
+  gastos         Gasto[]
 }
 
 model Broker {
@@ -207,4 +209,24 @@ model Gasto {
   monto       Float
   descripcion String?
   fecha       DateTime @default(now())
+}
+
+model GeoCache {
+  id                Int      @id @default(autoincrement())
+  addressNormalized String   @unique
+  lat               Float
+  lng               Float
+  createdAt         DateTime @default(now())
+}
+
+model RouteCache {
+  id                 Int      @id @default(autoincrement())
+  origenNormalized   String
+  destinoNormalized  String
+  distanceMillas     Float
+  distanceKm         Float
+  createdAt          DateTime @default(now())
+  hitCount           Int      @default(0)
+
+  @@unique([origenNormalized, destinoNormalized])
 }
