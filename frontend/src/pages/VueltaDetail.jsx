@@ -44,9 +44,10 @@ export default function VueltaDetail() {
 
   useEffect(() => {
     if (newCalcMillas != null) {
-      setNewTramo(t => ({ ...t, kmRecorridos: newCalcKm?.toFixed(1) ?? t.kmRecorridos, distanceMillas: newCalcMillas, distanceKm: newCalcKm }))
+      const dist = unit === 'mi' ? newCalcMillas : newCalcKm
+      setNewTramo(t => ({ ...t, kmRecorridos: dist?.toFixed(1) ?? t.kmRecorridos, distanceMillas: newCalcMillas, distanceKm: newCalcKm }))
     }
-  }, [newCalcMillas, newCalcKm])
+  }, [newCalcMillas, newCalcKm, unit])
 
   // Auto-fill mileage for edit tramo form
   const { distanceMillas: editCalcMillas, distanceKm: editCalcKm, loading: editCalcLoading, error: editCalcError } =
@@ -54,9 +55,10 @@ export default function VueltaDetail() {
 
   useEffect(() => {
     if (editCalcMillas != null && editingTramoId) {
-      setTramoForm(f => f ? { ...f, kmRecorridos: editCalcKm?.toFixed(1) ?? f.kmRecorridos, distanceMillas: editCalcMillas, distanceKm: editCalcKm } : f)
+      const dist = unit === 'mi' ? editCalcMillas : editCalcKm
+      setTramoForm(f => f ? { ...f, kmRecorridos: dist?.toFixed(1) ?? f.kmRecorridos, distanceMillas: editCalcMillas, distanceKm: editCalcKm } : f)
     }
-  }, [editCalcMillas, editCalcKm, editingTramoId])
+  }, [editCalcMillas, editCalcKm, editingTramoId, unit])
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['vuelta', id] })
@@ -275,7 +277,12 @@ export default function VueltaDetail() {
           { label: t('trips.detail.totalIncome'), value: fmt(vuelta.ingresoTotal), cls: 'text-success' },
           { label: t('trips.detail.totalExpense'), value: fmt(vuelta.gastoTotal), cls: 'text-danger' },
           { label: t('trips.detail.profitability'), value: fmt(vuelta.rentabilidadNeta), cls: vuelta.rentabilidadNeta >= 0 ? 'text-success' : 'text-danger' },
-          { label: t('trips.detail.kmTotal'), value: `${(vuelta.kmTotales ?? 0).toLocaleString('en-US')} ${unit}`, cls: 'text-gold' },
+          { label: t('trips.detail.kmTotal'), value: (() => {
+              const d = vuelta.totalMillas != null
+                ? (unit === 'mi' ? vuelta.totalMillas : vuelta.totalMillas * 1.60934)
+                : vuelta.kmTotales
+              return `${(d ?? 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })} ${unit}`
+            })(), cls: 'text-gold' },
         ].map(({ label, value, cls }) => (
           <div key={label} className="bg-surface border border-border-dim rounded-xl p-4">
             <p className="text-text-muted text-xs uppercase tracking-wide mb-1">{label}</p>

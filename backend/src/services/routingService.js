@@ -25,14 +25,28 @@ export async function geocodeAddress(address) {
 
   let coords
   try {
-    const { data } = await withRetry(() =>
-      axios.get(`${ORS_BASE}/geocode/search`, {
-        headers: { Authorization: ORS_KEY },
-        params: { text: address, size: 1, 'boundary.country': 'US' },
-        timeout: TIMEOUT,
-      })
-    )
-    const [lng, lat] = data.features[0].geometry.coordinates
+    const tryGeocode = async (text, params) => {
+      const { data } = await withRetry(() =>
+        axios.get(`${ORS_BASE}/geocode/search`, {
+          headers: { Authorization: ORS_KEY },
+          params: { text, size: 1, ...params },
+          timeout: TIMEOUT,
+        })
+      )
+      return data.features.length > 0 ? data.features[0].geometry.coordinates : null
+    }
+
+    // First attempt: precise search with US boundary
+    let result = await tryGeocode(address, { 'boundary.country': 'US' })
+
+    // Fallback: broader search without boundary constraints
+    if (!result) {
+      const broader = `${address.replace(/,\s*[A-Z]{2}$/, '')}, USA`
+      result = await tryGeocode(broader, {})
+    }
+
+    if (!result) throw new Error('No features returned')
+    const [lng, lat] = result
     coords = { lat, lng }
   } catch (err) {
     console.error(`[routing] geocode failed for "${address}":`, err.message)

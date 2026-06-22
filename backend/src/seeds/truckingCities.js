@@ -206,4 +206,10 @@ export const TRUCKING_CITIES = [
   ['Manchester', 'NH', 42.9956, -71.4548],
   // Vermont
   ['Burlington', 'VT', 44.4759, -73.2121],
+  // Small cities used by dispatchers
+  ['Lolita', 'TX', 28.8336, -96.5386],
+  ['New Caney', 'TX', 30.1524, -95.2175],
+  ['Bradenton', 'FL', 27.4989, -82.5748],
+  ['Immokalee', 'FL', 26.4181, -81.4182],
+  ['Pharr', 'TX', 26.1948, -98.1836],
 ]

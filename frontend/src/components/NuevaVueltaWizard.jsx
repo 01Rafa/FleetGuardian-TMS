@@ -54,9 +54,10 @@ export default function NuevaVueltaWizard() {
 
   useEffect(() => {
     if (calcMillas != null) {
-      setNewTramo(t => ({ ...t, kmRecorridos: calcKm?.toFixed(1) ?? t.kmRecorridos, distanceMillas: calcMillas, distanceKm: calcKm }))
+      const dist = unit === 'mi' ? calcMillas : calcKm
+      setNewTramo(t => ({ ...t, kmRecorridos: dist?.toFixed(1) ?? t.kmRecorridos, distanceMillas: calcMillas, distanceKm: calcKm }))
     }
-  }, [calcMillas, calcKm])
+  }, [calcMillas, calcKm, unit])
 
   const [gastos, setGastos] = useState([])
   const [newGasto, setNewGasto] = useState({ categoria: 'combustible', monto: 0, descripcion: '' })
