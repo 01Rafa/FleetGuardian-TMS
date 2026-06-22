@@ -49,3 +49,28 @@ test('handles already-abbreviated state', () => {
 test('handles no space around comma', () => {
   assert.equal(normalizeAddress('Phoenix,AZ'), 'phoenix,az')
 })
+
+// No-comma formats — space-separated city state
+test('handles no-comma abbreviated state', () => {
+  assert.equal(normalizeAddress('Pharr TX'), 'pharr,tx')
+})
+
+test('handles no-comma lowercase abbreviated state', () => {
+  assert.equal(normalizeAddress('pharr tx'), 'pharr,tx')
+})
+
+test('handles no-comma full state name', () => {
+  assert.equal(normalizeAddress('Pharr Texas'), 'pharr,tx')
+})
+
+test('handles no-comma multi-word city with abbreviated state', () => {
+  assert.equal(normalizeAddress('Immokalee FL'), 'immokalee,fl')
+})
+
+test('handles no-comma multi-word city and state', () => {
+  assert.equal(normalizeAddress('Kansas City MO'), 'kansas city,mo')
+})
+
+test('handles no-comma multi-word state name', () => {
+  assert.equal(normalizeAddress('Charlotte North Carolina'), 'charlotte,nc')
+})
