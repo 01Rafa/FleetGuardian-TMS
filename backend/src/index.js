@@ -18,6 +18,7 @@ import notificacionesRouter from './routes/notificaciones.js'
 import usuariosRouter from './routes/usuarios.js'
 import { jwtAuth } from './middleware/auth.js'
 import { startNotificacionesCron } from './jobs/notificaciones.job.js'
+import { runSeed } from './seeds/runSeed.js'
 
 const app = express()
 
@@ -64,6 +65,7 @@ app.use('/api/usuarios', usuariosRouter)
 app.use(errorHandler)
 
 const PORT = process.env.PORT ?? 3000
+runSeed().catch(err => console.error('[seed] Failed to seed cities:', err))
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`)
   startNotificacionesCron()
