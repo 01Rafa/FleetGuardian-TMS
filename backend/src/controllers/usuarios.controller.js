@@ -30,7 +30,7 @@ export const inviteUsuario = catchAsync(async (req, res) => {
 
   const hashed = await bcrypt.hash(TEMP_PASSWORD, 10)
   const user = await prisma.usuario.create({
-    data: { empresaId, nombre: nombre.trim(), email: email.trim().toLowerCase(), password: hashed, rol },
+    data: { empresaId, nombre: nombre.trim(), email: email.trim().toLowerCase(), password: hashed, rol, mustChangePassword: true },
     select: { id: true, nombre: true, email: true, rol: true, creadoEn: true },
   })
 

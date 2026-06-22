@@ -11,13 +11,13 @@ const COOKIE_OPTS = {
 }
 
 function userShape(u) {
-  return { id: u.id, nombre: u.nombre, email: u.email, rol: u.rol }
+  return { id: u.id, nombre: u.nombre, email: u.email, rol: u.rol, mustChangePassword: u.mustChangePassword ?? false }
 }
 
 export const login = catchAsync(async (req, res) => {
   const { email, password } = req.body
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' })
-  const user = await prisma.usuario.findUnique({ where: { email } })
+  const user = await prisma.usuario.findUnique({ where: { email }, select: { id: true, nombre: true, email: true, rol: true, empresaId: true, password: true, mustChangePassword: true } })
   if (!user) return res.status(401).json({ error: 'Invalid credentials' })
 
   const valid = await bcrypt.compare(password, user.password)
@@ -87,7 +87,7 @@ export const refresh = catchAsync(async (req, res) => {
 
   const user = await prisma.usuario.findUnique({
     where: { id: payload.userId },
-    select: { id: true, nombre: true, email: true, rol: true, empresaId: true },
+    select: { id: true, nombre: true, email: true, rol: true, empresaId: true, mustChangePassword: true },
   })
   if (!user) return res.status(401).json({ error: 'User not found' })
 
@@ -98,4 +98,19 @@ export const refresh = catchAsync(async (req, res) => {
 export const logout = catchAsync(async (req, res) => {
   res.clearCookie('refreshToken', COOKIE_OPTS)
   res.json({ ok: true })
+})
+
+export const changePassword = catchAsync(async (req, res) => {
+  const { password, confirmPassword } = req.body
+  if (!password) return res.status(400).json({ error: 'Password is required' })
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' })
+  if (password !== confirmPassword) return res.status(400).json({ error: 'Passwords do not match' })
+
+  const hashed = await bcrypt.hash(password, 10)
+  const user = await prisma.usuario.update({
+    where: { id: req.user.userId },
+    data: { password: hashed, mustChangePassword: false },
+    select: { id: true, nombre: true, email: true, rol: true, mustChangePassword: true },
+  })
+  res.json({ user: userShape(user) })
 })

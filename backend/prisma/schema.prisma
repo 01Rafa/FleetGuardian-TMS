@@ -29,8 +29,9 @@ model Usuario {
   nombre    String
   email     String   @unique
   password  String
-  rol       String   @default("dispatcher")
-  creadoEn  DateTime @default(now())
+  rol                String   @default("dispatcher")
+  mustChangePassword Boolean  @default(false)
+  creadoEn           DateTime @default(now())
 
   @@index([empresaId])
 }

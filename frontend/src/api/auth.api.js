@@ -1,4 +1,5 @@
 import axios from 'axios'
+import api from './axios'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
@@ -17,5 +18,9 @@ export const authApi = {
   },
   logout: async () => {
     await axios.post(`${API_URL}/api/auth/logout`, {}, { withCredentials: true })
+  },
+  changePassword: async (password, confirmPassword) => {
+    const { data } = await api.post('/auth/change-password', { password, confirmPassword })
+    return data
   },
 }

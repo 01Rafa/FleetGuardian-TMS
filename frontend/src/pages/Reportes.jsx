@@ -30,7 +30,10 @@ export default function Reportes() {
   )
 
   const topRoutes = vueltas
-    .map(v => ({ ruta: `${v.baseSalida} → …`, rentabilidad: v.rentabilidadNeta, codigo: v.codigo }))
+    .map(v => {
+      const lastLeg = v.tramos?.[v.tramos.length - 1]
+      return { ruta: `${v.baseSalida} → ${lastLeg?.destino ?? '…'}`, rentabilidad: v.rentabilidadNeta, codigo: v.codigo }
+    })
     .sort((a, b) => b.rentabilidad - a.rentabilidad)
     .slice(0, 5)
 

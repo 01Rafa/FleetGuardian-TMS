@@ -21,18 +21,14 @@ import { startNotificacionesCron } from './jobs/notificaciones.job.js'
 
 const app = express()
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5175',
-  'https://fleetguardian-tms.vercel.app',
-  /\.vercel\.app$/,
-]
+const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean)
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.some((allowedOrigin) => (
-      allowedOrigin instanceof RegExp ? allowedOrigin.test(origin) : allowedOrigin === origin
-    ))) {
+    if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
       return callback(null, true)
     }
     return callback(new Error('Not allowed by CORS'))

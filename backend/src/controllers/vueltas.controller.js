@@ -7,7 +7,7 @@ export function buildNextCodigo(prefix, lastCodigo) {
   return `${prefix}${String(next).padStart(3, '0')}`
 }
 
-async function generarCodigo() {
+async function generarCodigo(empresaId) {
   const year = new Date().getFullYear()
   const prefix = `VLT-${year}-`
   const last = await prisma.vuelta.findFirst({
@@ -67,7 +67,7 @@ export const listVueltas = catchAsync(async (req, res) => {
 
 export const createVuelta = catchAsync(async (req, res) => {
   const { empresaId } = req.user
-  const codigo = await generarCodigo()
+  const codigo = await generarCodigo(empresaId)
   const vuelta = await prisma.vuelta.create({
     data: prepareCreateVueltaData({ body: req.body, empresaId, codigo }),
     include: {
@@ -101,7 +101,11 @@ export const updateVuelta = catchAsync(async (req, res) => {
   const { empresaId } = req.user
   const vuelta = await prisma.vuelta.findFirst({ where: { id: req.params.id, empresaId } })
   if (!vuelta) return res.status(404).json({ error: 'Vuelta not found' })
-  const updated = await prisma.vuelta.update({ where: { id: req.params.id }, data: req.body })
+  const data = { ...req.body }
+  if (data.conductorSecundarioId === '') data.conductorSecundarioId = null
+  await prisma.vuelta.update({ where: { id: req.params.id }, data })
+  await recalcularVuelta(req.params.id)
+  const updated = await prisma.vuelta.findUnique({ where: { id: req.params.id } })
   res.json(updated)
 })
 
