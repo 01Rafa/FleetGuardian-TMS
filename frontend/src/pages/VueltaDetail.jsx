@@ -261,6 +261,22 @@ export default function VueltaDetail() {
             <p className={`font-serif text-xl font-bold ${cls}`}>{value}</p>
           </div>
         ))}
+
+        {/* CPM card */}
+        {vuelta.cpm != null ? (
+          <div className="bg-surface border border-border-dim rounded-xl p-4">
+            <p className="text-text-muted text-xs uppercase tracking-wide mb-1">{t('trips.cpm')}</p>
+            <p className="text-text-primary text-2xl font-semibold">
+              {fmt(vuelta.cpm)}<span className="text-text-muted text-sm font-normal"> /mi</span>
+            </p>
+            <p className="text-text-muted text-xs mt-1">{vuelta.totalMillas?.toFixed(1)} mi total</p>
+          </div>
+        ) : (
+          <div className="bg-surface border border-border-dim rounded-xl p-4 opacity-50">
+            <p className="text-text-muted text-xs uppercase tracking-wide mb-1">{t('trips.cpm')}</p>
+            <p className="text-text-muted text-sm">{t('trips.enterMilesManually')}</p>
+          </div>
+        )}
       </div>
 
       {/* Basic Info */}
@@ -394,6 +410,10 @@ export default function VueltaDetail() {
             <div key={tramo.id} className="flex items-center gap-3 p-3 bg-surface-2 rounded-lg border border-border-dim text-sm">
               <span className="flex-1 text-text-primary">{tramo.origen} → {tramo.destino}</span>
               <span className="text-text-muted text-xs">{tramo.tipo}{tramo.kmRecorridos ? ` · ${tramo.kmRecorridos} ${unit}` : ''}{tramo.broker ? ` · ${tramo.broker.nombre}` : ''}{tramo.numeroCarga ? ` · #${tramo.numeroCarga}` : ''}</span>
+              {tramo.distanceMillas != null
+                ? <span className="text-text-muted text-xs">{tramo.distanceMillas.toFixed(1)} mi</span>
+                : <span className="text-amber-400 text-xs">{t('trips.enterMilesManually')}</span>
+              }
               <span className="text-success font-medium">{fmt(tramo.fleteCobrado)}</span>
               <button onClick={() => startEditTramo(tramo)} className="text-text-muted hover:text-gold text-xs px-2 py-1 border border-border-dim rounded hover:border-gold/30 transition-colors">✏</button>
               <button onClick={() => confirm(t('trips.detail.confirmDeleteLeg')) && deleteTramoMutation.mutate(tramo.id)}

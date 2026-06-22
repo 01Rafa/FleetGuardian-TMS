@@ -37,6 +37,12 @@ export default function Reportes() {
     .sort((a, b) => b.rentabilidad - a.rentabilidad)
     .slice(0, 5)
 
+  const avgCpm = (() => {
+    const withCpm = vueltas.filter(v => v.cpm != null)
+    if (!withCpm.length) return null
+    return withCpm.reduce((s, v) => s + v.cpm, 0) / withCpm.length
+  })()
+
   const tooltipStyle = { background: '#161616', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8 }
 
   return (
@@ -70,6 +76,16 @@ export default function Reportes() {
           </ResponsiveContainer>
         )}
       </div>
+
+      {avgCpm != null && (
+        <div className="bg-surface border border-border-dim rounded-xl p-5">
+          <h3 className="font-serif text-lg text-text-primary mb-2">{t('reports.avgCpm')}</h3>
+          <p className="text-3xl font-semibold text-text-primary">
+            ${avgCpm.toFixed(2)}<span className="text-text-muted text-base font-normal"> /mi</span>
+          </p>
+          <p className="text-text-muted text-sm mt-1">Período seleccionado</p>
+        </div>
+      )}
 
       <div className="bg-surface border border-border-dim rounded-xl p-5">
         <h3 className="font-serif text-lg text-text-primary mb-4">{t('reports.topTrips')}</h3>

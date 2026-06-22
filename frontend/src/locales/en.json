@@ -162,7 +162,9 @@
       "usualTruck": "Usual truck of",
       "usualDriver": "Usual driver of",
       "usualSecondary": "Usual co-driver with"
-    }
+    },
+    "cpm": "Cost per mile",
+    "enterMilesManually": "Enter miles manually"
   },
   "fleet": {
     "title": "Fleet",
@@ -254,7 +256,8 @@
     "topTrips": "Top Trips by Profitability",
     "noData": "No data",
     "income": "Income",
-    "expense": "Expense"
+    "expense": "Expense",
+    "avgCpm": "Avg cost per mile"
   },
   "settings": {
     "title": "Settings",

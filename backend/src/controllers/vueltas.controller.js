@@ -58,11 +58,17 @@ export const listVueltas = catchAsync(async (req, res) => {
       camion: true,
       conductorPrincipal: true,
       conductorSecundario: true,
-      tramos: { orderBy: { orden: 'asc' }, select: { destino: true, numeroCarga: true } },
+      tramos: { orderBy: { orden: 'asc' }, select: { destino: true, numeroCarga: true, distanceMillas: true } },
     },
     orderBy: { creadoEn: 'desc' },
   })
-  res.json(vueltas)
+  const vueltasWithCpm = vueltas.map(v => {
+    const allHaveMiles = v.tramos.length > 0 && v.tramos.every(t => t.distanceMillas != null)
+    const totalMillas = allHaveMiles ? v.tramos.reduce((s, t) => s + t.distanceMillas, 0) : null
+    const cpm = totalMillas && totalMillas > 0 ? v.gastoTotal / totalMillas : null
+    return { ...v, totalMillas, cpm }
+  })
+  res.json(vueltasWithCpm)
 })
 
 export const createVuelta = catchAsync(async (req, res) => {
@@ -94,7 +100,12 @@ export const getVuelta = catchAsync(async (req, res) => {
   })
   if (!vuelta) return res.status(404).json({ error: 'Vuelta not found' })
   const kmTotales = vuelta.tramos.reduce((s, t) => s + (t.kmRecorridos ?? 0), 0)
-  res.json({ ...vuelta, kmTotales })
+  const allHaveMiles = vuelta.tramos.length > 0 && vuelta.tramos.every(t => t.distanceMillas != null)
+  const totalMillas = allHaveMiles
+    ? vuelta.tramos.reduce((s, t) => s + t.distanceMillas, 0)
+    : null
+  const cpm = totalMillas && totalMillas > 0 ? vuelta.gastoTotal / totalMillas : null
+  res.json({ ...vuelta, kmTotales, totalMillas, cpm })
 })
 
 export const updateVuelta = catchAsync(async (req, res) => {

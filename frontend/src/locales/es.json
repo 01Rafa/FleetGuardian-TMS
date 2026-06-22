@@ -162,7 +162,9 @@
       "usualTruck": "Camión habitual de",
       "usualDriver": "Conductor habitual de",
       "usualSecondary": "Conductor habitual junto a"
-    }
+    },
+    "cpm": "Costo por milla",
+    "enterMilesManually": "Ingresa millas manualmente"
   },
   "fleet": {
     "title": "Flota",
@@ -237,7 +239,8 @@
     "topTrips": "Top Vueltas por Rentabilidad",
     "noData": "Sin datos",
     "income": "Ingreso",
-    "expense": "Gasto"
+    "expense": "Gasto",
+    "avgCpm": "Costo promedio por milla"
   },
   "settings": {
     "title": "Configuración",
