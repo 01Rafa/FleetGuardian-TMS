@@ -10,6 +10,8 @@ export function useRouteDistance(origen, destino) {
   const prevRef = useRef({ origen: '', destino: '' })
 
   useEffect(() => {
+    clearTimeout(timerRef.current)
+
     const origenClean = (origen ?? '').trim()
     const destinoClean = (destino ?? '').trim()
 
@@ -18,8 +20,6 @@ export function useRouteDistance(origen, destino) {
 
     // Only trigger if value actually changed
     if (origenClean === prevRef.current.origen && destinoClean === prevRef.current.destino) return
-
-    clearTimeout(timerRef.current)
     timerRef.current = setTimeout(async () => {
       prevRef.current = { origen: origenClean, destino: destinoClean }
       setLoading(true)
