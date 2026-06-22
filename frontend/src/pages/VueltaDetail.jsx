@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDistanceUnit } from '../context/DistanceUnitContext'
 import { useParams, useNavigate } from 'react-router-dom'
@@ -11,6 +11,7 @@ import { TramoTimeline } from '../components/TramoTimeline'
 import { GastosDonut } from '../components/GastosDonut'
 import BrokerAutocomplete from '../components/BrokerAutocomplete'
 import { DateTimePicker } from '../components/DatePicker'
+import { useRouteDistance } from '../hooks/useRouteDistance'
 
 const ESTADOS = ['planificada', 'en_curso', 'completada', 'facturada']
 const TIPOS_TRAMO = ['carga', 'vacio', 'regreso']
@@ -36,6 +37,26 @@ export default function VueltaDetail() {
   const [gastoForm, setGastoForm] = useState(null)
   const [newTramo, setNewTramo] = useState({ origen: '', destino: '', broker: null, numeroCarga: '', fleteCobrado: '', kmRecorridos: '', tipo: 'carga', fechaHora: '' })
   const [newGasto, setNewGasto] = useState({ categoria: 'combustible', monto: '', descripcion: '' })
+
+  // Auto-fill mileage for new tramo form
+  const { distanceMillas: newCalcMillas, distanceKm: newCalcKm, loading: newCalcLoading, error: newCalcError } =
+    useRouteDistance(newTramo.origen, newTramo.destino)
+
+  useEffect(() => {
+    if (newCalcMillas != null) {
+      setNewTramo(t => ({ ...t, kmRecorridos: newCalcKm?.toFixed(1) ?? t.kmRecorridos, distanceMillas: newCalcMillas, distanceKm: newCalcKm }))
+    }
+  }, [newCalcMillas, newCalcKm])
+
+  // Auto-fill mileage for edit tramo form
+  const { distanceMillas: editCalcMillas, distanceKm: editCalcKm, loading: editCalcLoading, error: editCalcError } =
+    useRouteDistance(tramoForm?.origen, tramoForm?.destino)
+
+  useEffect(() => {
+    if (editCalcMillas != null && editingTramoId) {
+      setTramoForm(f => f ? { ...f, kmRecorridos: editCalcKm?.toFixed(1) ?? f.kmRecorridos, distanceMillas: editCalcMillas, distanceKm: editCalcKm } : f)
+    }
+  }, [editCalcMillas, editCalcKm, editingTramoId])
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['vuelta', id] })
@@ -393,7 +414,26 @@ export default function VueltaDetail() {
               <BrokerAutocomplete value={tramoForm.broker} onChange={broker => setTramoForm(s => ({ ...s, broker }))} placeholder={t('trips.leg.broker')} className={f} />
               <input className={f} placeholder={t('trips.leg.loadNumber')} value={tramoForm.numeroCarga} onChange={e => setTramoForm(s => ({ ...s, numeroCarga: e.target.value }))} />
               <input className={f} type="number" placeholder={t('trips.leg.freight')} value={tramoForm.fleteCobrado} onChange={e => setTramoForm(s => ({ ...s, fleteCobrado: e.target.value }))} />
-              <input className={f} type="number" placeholder={unit === 'mi' ? 'Miles' : 'KM'} value={tramoForm.kmRecorridos} onChange={e => setTramoForm(s => ({ ...s, kmRecorridos: e.target.value }))} />
+              <div>
+                <div className="relative">
+                  <input
+                    className={f + (editCalcLoading ? ' opacity-50' : '')}
+                    type="number"
+                    placeholder={unit === 'mi' ? 'Miles' : 'KM'}
+                    value={tramoForm.kmRecorridos}
+                    onChange={e => setTramoForm(s => ({ ...s, kmRecorridos: e.target.value }))}
+                  />
+                  {editCalcLoading && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs animate-pulse">…</span>
+                  )}
+                </div>
+                {editCalcMillas != null && !editCalcLoading && (
+                  <p className="text-green-400 text-xs mt-1">✓ calculado automáticamente — {editCalcMillas.toFixed(1)} mi</p>
+                )}
+                {editCalcError && !editCalcLoading && (
+                  <p className="text-amber-400 text-xs mt-1">{t('trips.enterMilesManually')}</p>
+                )}
+              </div>
               <select className={f} value={tramoForm.tipo} onChange={e => setTramoForm(s => ({ ...s, tipo: e.target.value }))}>
                 {TIPOS_TRAMO.map(v => <option key={v} value={v}>{t(`tramoTipo.${v}`)}</option>)}
               </select>
@@ -429,7 +469,26 @@ export default function VueltaDetail() {
           <BrokerAutocomplete value={newTramo.broker} onChange={broker => setNewTramo(s => ({ ...s, broker }))} placeholder={t('trips.leg.broker')} className={f} />
           <input className={f} placeholder={t('trips.leg.loadNumber')} value={newTramo.numeroCarga} onChange={e => setNewTramo(s => ({ ...s, numeroCarga: e.target.value }))} />
           <input className={f} type="number" placeholder={t('trips.leg.freight')} value={newTramo.fleteCobrado} onChange={e => setNewTramo(s => ({ ...s, fleteCobrado: e.target.value }))} />
-          <input className={f} type="number" placeholder={unit === 'mi' ? 'Miles' : 'KM'} value={newTramo.kmRecorridos} onChange={e => setNewTramo(s => ({ ...s, kmRecorridos: e.target.value }))} />
+          <div>
+            <div className="relative">
+              <input
+                className={f + (newCalcLoading ? ' opacity-50' : '')}
+                type="number"
+                placeholder={unit === 'mi' ? 'Miles' : 'KM'}
+                value={newTramo.kmRecorridos}
+                onChange={e => setNewTramo(s => ({ ...s, kmRecorridos: e.target.value }))}
+              />
+              {newCalcLoading && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs animate-pulse">…</span>
+              )}
+            </div>
+            {newCalcMillas != null && !newCalcLoading && (
+              <p className="text-green-400 text-xs mt-1">✓ calculado automáticamente — {newCalcMillas.toFixed(1)} mi</p>
+            )}
+            {newCalcError && !newCalcLoading && (
+              <p className="text-amber-400 text-xs mt-1">{t('trips.enterMilesManually')}</p>
+            )}
+          </div>
           <select className={f} value={newTramo.tipo} onChange={e => setNewTramo(s => ({ ...s, tipo: e.target.value }))}>
             {TIPOS_TRAMO.map(v => <option key={v} value={v}>{t(`tramoTipo.${v}`)}</option>)}
           </select>

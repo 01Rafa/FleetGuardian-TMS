@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { DndContext, closestCenter } from '@dnd-kit/core'
@@ -11,6 +11,7 @@ import { vueltasApi, sugerenciasApi } from '../api/vueltas.api'
 import BrokerAutocomplete from './BrokerAutocomplete'
 import { useDistanceUnit } from '../context/DistanceUnitContext'
 import { DateTimePicker } from './DatePicker'
+import { useRouteDistance } from '../hooks/useRouteDistance'
 
 const TIPOS_TRAMO = ['carga', 'vacio', 'regreso']
 const CATEGORIAS = ['combustible', 'peaje', 'viatico', 'mantenimiento', 'otro']
@@ -47,6 +48,16 @@ export default function NuevaVueltaWizard() {
 
   const [tramos, setTramos] = useState([])
   const [newTramo, setNewTramo] = useState({ origen: '', destino: '', broker: null, numeroCarga: '', fleteCobrado: 0, kmRecorridos: '', cargaTon: '', tipo: 'carga', fechaHora: '', tempId: '' })
+
+  const { distanceMillas: calcMillas, distanceKm: calcKm, loading: calcLoading, error: calcError } =
+    useRouteDistance(newTramo.origen, newTramo.destino)
+
+  useEffect(() => {
+    if (calcMillas != null) {
+      setNewTramo(t => ({ ...t, kmRecorridos: calcKm?.toFixed(1) ?? t.kmRecorridos, distanceMillas: calcMillas, distanceKm: calcKm }))
+    }
+  }, [calcMillas, calcKm])
+
   const [gastos, setGastos] = useState([])
   const [newGasto, setNewGasto] = useState({ categoria: 'combustible', monto: 0, descripcion: '' })
 
@@ -292,7 +303,26 @@ export default function NuevaVueltaWizard() {
             />
             <input value={newTramo.numeroCarga} onChange={e => setNewTramo(t => ({ ...t, numeroCarga: e.target.value }))} className={inputCls} placeholder={t('trips.leg.loadNumber')} />
             <input type="number" value={newTramo.fleteCobrado} onChange={e => setNewTramo(t => ({ ...t, fleteCobrado: e.target.value }))} className={inputCls} placeholder={t('trips.leg.freight')} />
-            <input type="number" value={newTramo.kmRecorridos} onChange={e => setNewTramo(t => ({ ...t, kmRecorridos: e.target.value }))} className={inputCls} placeholder={unit === 'mi' ? 'Miles' : 'KM'} />
+            <div>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={newTramo.kmRecorridos}
+                  onChange={e => setNewTramo(t => ({ ...t, kmRecorridos: e.target.value }))}
+                  className={inputCls + (calcLoading ? ' opacity-50' : '')}
+                  placeholder={unit === 'mi' ? 'Miles' : 'KM'}
+                />
+                {calcLoading && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs animate-pulse">…</span>
+                )}
+              </div>
+              {calcMillas != null && !calcLoading && (
+                <p className="text-green-400 text-xs mt-1">✓ calculado automáticamente — {calcMillas.toFixed(1)} mi</p>
+              )}
+              {calcError && !calcLoading && (
+                <p className="text-amber-400 text-xs mt-1">{t('trips.enterMilesManually')}</p>
+              )}
+            </div>
             <select value={newTramo.tipo} onChange={e => setNewTramo(t => ({ ...t, tipo: e.target.value }))} className={inputCls}>
               {TIPOS_TRAMO.map(tipo => <option key={tipo} value={tipo}>{t(`tramoTipo.${tipo}`)}</option>)}
             </select>
