@@ -46,6 +46,8 @@ const tramoBody = z.object({
   fechaHora: dateStr,
   brokerId: optUuid,
   notas: z.string().nullable().optional(),
+  distanceMillas: z.number().nullable().optional(),
+  distanceKm: z.number().nullable().optional(),
 })
 
 const gastoBody = z.object({
@@ -109,6 +111,8 @@ export const updateTramoSchema = z.object({
   fechaHora: dateStr,
   brokerId: optUuid,
   notas: z.string().nullable().optional(),
+  distanceMillas: z.number().nullable().optional(),
+  distanceKm: z.number().nullable().optional(),
 })
 
 // ── Gasto ─────────────────────────────────────────────────────────────────────
