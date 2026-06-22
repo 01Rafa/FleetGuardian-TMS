@@ -190,7 +190,7 @@ export default function VueltaDetail() {
   }
 
   const startEditTramo = (tramo) => {
-    setTramoForm({ origen: tramo.origen, destino: tramo.destino, broker: tramo.broker ?? null, numeroCarga: tramo.numeroCarga ?? '', fleteCobrado: tramo.fleteCobrado, kmRecorridos: tramo.kmRecorridos ?? '', tipo: tramo.tipo, fechaHora: toLocal(tramo.fechaHora) })
+    setTramoForm({ origen: tramo.origen, destino: tramo.destino, broker: tramo.broker ?? null, numeroCarga: tramo.numeroCarga ?? '', fleteCobrado: tramo.fleteCobrado, kmRecorridos: tramo.kmRecorridos ?? '', tipo: tramo.tipo, fechaHora: toLocal(tramo.fechaHora), distanceMillas: tramo.distanceMillas ?? null, distanceKm: tramo.distanceKm ?? null })
     setEditingTramoId(tramo.id)
   }
 
@@ -206,6 +206,7 @@ export default function VueltaDetail() {
         kmRecorridos: tramoForm.kmRecorridos ? Number(tramoForm.kmRecorridos) : null,
         tipo: tramoForm.tipo,
         fechaHora: tramoForm.fechaHora ? new Date(tramoForm.fechaHora).toISOString() : null,
+        ...(tramoForm.distanceMillas != null ? { distanceMillas: tramoForm.distanceMillas, distanceKm: tramoForm.distanceKm } : {}),
       },
     })
   }
@@ -231,6 +232,7 @@ export default function VueltaDetail() {
       kmRecorridos: newTramo.kmRecorridos ? Number(newTramo.kmRecorridos) : null,
       tipo: newTramo.tipo,
       fechaHora: newTramo.fechaHora ? new Date(newTramo.fechaHora).toISOString() : null,
+      ...(newTramo.distanceMillas != null ? { distanceMillas: newTramo.distanceMillas, distanceKm: newTramo.distanceKm } : {}),
     })
   }
 
