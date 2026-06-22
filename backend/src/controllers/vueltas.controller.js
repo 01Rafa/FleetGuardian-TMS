@@ -140,6 +140,7 @@ export const changeEstado = catchAsync(async (req, res) => {
     where: { id: req.params.id },
     data: { estado: req.body.estado },
   })
+  await recalcularVuelta(req.params.id)
   res.json(updated)
 })
 

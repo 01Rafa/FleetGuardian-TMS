@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 
 const styles = {
-  en_curso:      'bg-success/20 text-success border-success/30',
-  planificada:   'bg-gold/20 text-gold border-gold/30',
-  completada:    'bg-text-muted/20 text-text-muted border-text-muted/30',
-  facturada:     'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  planificada:   'bg-text-muted/20 text-text-muted border-text-muted/30',
+  en_curso:      'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  completada:    'bg-success/20 text-success border-success/30',
+  facturada:     'bg-gold/20 text-gold border-gold/30',
   disponible:    'bg-success/20 text-success border-success/30',
   en_ruta:       'bg-gold/20 text-gold border-gold/30',
   mantenimiento: 'bg-danger/20 text-danger border-danger/30',

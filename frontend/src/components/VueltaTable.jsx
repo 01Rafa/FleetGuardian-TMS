@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { StatusBadge } from './StatusBadge'
+import { StatusDropdown } from './StatusDropdown'
 
 const fmt = (n) => `$ ${Number(n ?? 0).toLocaleString('en-US')}`
 
@@ -67,7 +67,7 @@ export function VueltaTable({ vueltas = [], selectable = false, selectedIds = []
               <td className={`px-4 py-3 font-medium ${v.rentabilidadNeta >= 0 ? 'text-success' : 'text-danger'}`}>
                 {fmt(v.rentabilidadNeta)}
               </td>
-              <td className="px-4 py-3"><StatusBadge estado={v.estado} /></td>
+              <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}><StatusDropdown vuelta={v} /></td>
               <td className="px-4 py-3">
                 {!selectable && (
                   <button
