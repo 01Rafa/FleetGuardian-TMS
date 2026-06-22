@@ -1,6 +1,5 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mock } from 'node:test'
 
 // We test the pure conversion logic only — ORS calls are integration-tested via verify-routes.mjs
 test('miles conversion: 1000 meters = 0.621 miles (±0.01)', () => {

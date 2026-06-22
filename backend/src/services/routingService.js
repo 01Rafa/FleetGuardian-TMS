@@ -53,10 +53,10 @@ export async function getRouteMiles(origen, destino) {
     where: { origenNormalized_destinoNormalized: { origenNormalized, destinoNormalized } },
   })
   if (cached) {
-    await prisma.routeCache.update({
+    prisma.routeCache.update({
       where: { origenNormalized_destinoNormalized: { origenNormalized, destinoNormalized } },
       data: { hitCount: { increment: 1 } },
-    })
+    }).catch(err => console.error('[routing] hitCount increment failed:', err.message))
     return { distanceMillas: cached.distanceMillas, distanceKm: cached.distanceKm }
   }
 
