@@ -9,7 +9,9 @@ const TIMEOUT = 5000
 async function withRetry(fn) {
   try {
     return await fn()
-  } catch {
+  } catch (err) {
+    // Don't retry 4xx — only transient network/5xx errors
+    if (err.response && err.response.status < 500) throw err
     await new Promise(r => setTimeout(r, 1000))
     return await fn()
   }
