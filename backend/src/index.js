@@ -16,6 +16,7 @@ import piezasRouter from './routes/piezas.js'
 import brokersRouter from './routes/brokers.js'
 import notificacionesRouter from './routes/notificaciones.js'
 import usuariosRouter from './routes/usuarios.js'
+import routingRouter from './routes/routing.js'
 import { jwtAuth } from './middleware/auth.js'
 import { startNotificacionesCron } from './jobs/notificaciones.job.js'
 import { runSeed } from './seeds/runSeed.js'
@@ -61,6 +62,7 @@ app.use('/api/piezas', piezasRouter)
 app.use('/api/brokers', brokersRouter)
 app.use('/api/notificaciones', notificacionesRouter)
 app.use('/api/usuarios', usuariosRouter)
+app.use('/api/routing', routingRouter)
 
 app.use(errorHandler)
 
