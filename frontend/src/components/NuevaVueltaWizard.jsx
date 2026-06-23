@@ -16,7 +16,6 @@ import { DateTimePicker } from './DatePicker'
 import { useRouteDistance } from '../hooks/useRouteDistance'
 
 const TIPOS_TRAMO = ['carga', 'vacio', 'regreso']
-const RATECON_TRAMO_ID = 'ratecon-leg-1'
 const CATEGORIAS = ['combustible', 'peaje', 'viatico', 'mantenimiento', 'otro']
 
 const RATECON_FIELD_LABELS = {
@@ -41,7 +40,7 @@ function SortableTramo({ tramo, index, onRemove }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: tramo.tempId })
   const style = { transform: CSS.Transform.toString(transform), transition }
   const meta = [tramo.tipoCarga, tramo.tipoEquipo].filter(Boolean).join(' · ')
-  const brokerLabel = tramo.broker?.nombre ?? (tramo.brokerHint ? `${tramo.brokerHint} *` : null)
+  const brokerLabel = tramo.broker?.nombre ?? null
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-3 bg-surface-2 border border-border-dim rounded-lg">
       <span {...attributes} {...listeners} className="text-text-muted cursor-grab text-lg">⠿</span>
@@ -62,6 +61,7 @@ export default function NuevaVueltaWizard() {
   const qc = useQueryClient()
   const fileInputRef = useRef(null)
   const pendingFileRef = useRef(null) // keeps File object alive for retry
+  const rateConDataRef = useRef(null) // always-current rateConData for async callbacks
   const [step, setStep] = useState(1)
 
   const [info, setInfo] = useState({
@@ -101,60 +101,34 @@ export default function NuevaVueltaWizard() {
     }
   }, [calcMillas, calcKm, unit])
 
-  // Auto-add leg 1 as a card whenever rate con data arrives
-  useEffect(() => {
-    if (!rateConData) return
-    setTramos(prev => {
-      const withoutRateCon = prev.filter(t => t.tempId !== RATECON_TRAMO_ID)
-      return [{
-        origen: rateConData.origin ?? '',
-        destino: rateConData.destination ?? '',
-        broker: null,
-        brokerHint: rateConData.brokerName ?? null,
-        numeroCarga: rateConData.loadNumber ? String(rateConData.loadNumber) : '',
-        fleteCobrado: rateConData.freightAmount ?? 0,
-        kmRecorridos: '',
-        cargaTon: '',
-        tipo: 'carga',
-        fechaHora: rateConData.originDate ?? '',
-        tipoCarga: rateConData.commodity ?? '',
-        tipoEquipo: rateConData.equipment ?? '',
-        fechaEntrega: rateConData.destinationDate ?? '',
-        tempId: RATECON_TRAMO_ID,
-      }, ...withoutRateCon]
-    })
-  }, [rateConData])
+  // Keep ref in sync so async callbacks always read the latest rateConData
+  useEffect(() => { rateConDataRef.current = rateConData }, [rateConData])
 
-  // Pre-fill the leg form when the user enters Step 2 with rate con data
+  // Fallback: re-apply rate con data if user re-uploads while already on Step 2
   useEffect(() => {
     if (step !== 2 || !rateConData) return
-    console.log('rateConData in Step 2:', rateConData)
-    console.log('setting newTramo from rateConData')
+    console.log('rateConData changed on Step 2:', rateConData)
     setNewTramo(prev => ({
       ...prev,
-      origen: rateConData.origin ?? prev.origen,
-      destino: rateConData.destination ?? prev.destino,
-      numeroCarga: rateConData.loadNumber ? String(rateConData.loadNumber) : prev.numeroCarga,
-      fleteCobrado: rateConData.freightAmount ?? prev.fleteCobrado,
-      fechaHora: rateConData.originDate ?? prev.fechaHora,
-      fechaEntrega: rateConData.destinationDate ?? prev.fechaEntrega,
-      tipoCarga: rateConData.commodity ?? prev.tipoCarga,
-      tipoEquipo: rateConData.equipment ?? prev.tipoEquipo,
+      ...(rateConData.origin ? { origen: rateConData.origin } : {}),
+      ...(rateConData.destination ? { destino: rateConData.destination } : {}),
+      ...(rateConData.loadNumber ? { numeroCarga: String(rateConData.loadNumber) } : {}),
+      ...(rateConData.freightAmount ? { fleteCobrado: rateConData.freightAmount } : {}),
+      ...(rateConData.originDate ? { fechaHora: rateConData.originDate } : {}),
+      ...(rateConData.destinationDate ? { fechaEntrega: rateConData.destinationDate } : {}),
+      ...(rateConData.commodity ? { tipoCarga: rateConData.commodity } : {}),
+      ...(rateConData.equipment ? { tipoEquipo: rateConData.equipment } : {}),
     }))
-  }, [step, rateConData])
+  }, [rateConData])
 
-  // Resolve broker — patch the auto-added card and pre-fill the form
+  // Resolve broker and pre-fill the form's broker field
   useEffect(() => {
     if (!rateConData?.brokerName) return
     let cancelled = false
     brokersApi.search(rateConData.brokerName).then(results => {
       if (cancelled) return
       if (results.length > 0) {
-        const broker = results[0]
-        setTramos(prev => prev.map(t =>
-          t.tempId === RATECON_TRAMO_ID ? { ...t, broker, brokerHint: null } : t
-        ))
-        setNewTramo(prev => ({ ...prev, broker }))
+        setNewTramo(prev => ({ ...prev, broker: results[0] }))
         setRateConBrokerName(null)
       } else {
         setRateConBrokerName(rateConData.brokerName)
@@ -233,7 +207,6 @@ export default function NuevaVueltaWizard() {
           const broker = tr.broker
           delete tr.tempId
           delete tr.broker
-          delete tr.brokerHint
           return {
             ...tr,
             orden: i + 1,
@@ -299,7 +272,7 @@ export default function NuevaVueltaWizard() {
       setTruckLastLoc(null)
       // Restore driver location if available and rate con didn't set origin
       setNewTramo(prev => {
-        if (!rateConData?.origin) {
+        if (!rateConDataRef.current?.origin) {
           return { ...prev, origen: driverLastLoc?.location ?? '' }
         }
         return prev
@@ -316,7 +289,7 @@ export default function NuevaVueltaWizard() {
       const { lastLocation, lastTripDate } = await camionesApi.lastLocation(camionId)
       if (lastLocation) {
         setTruckLastLoc({ location: lastLocation, date: lastTripDate })
-        if (!rateConData?.origin) {
+        if (!rateConDataRef.current?.origin) {
           setNewTramo(prev => ({ ...prev, origen: lastLocation }))
         }
       } else {
@@ -334,6 +307,25 @@ export default function NuevaVueltaWizard() {
         if (conductor) setInfo(i => ({ ...i, conductorSecundarioId: conductor.id }))
       } catch { /* suggestions are optional */ }
     }
+  }
+
+  const handleGoToStep2 = () => {
+    const d = rateConDataRef.current
+    if (d) {
+      console.log('Applying rateConData to form on Next click:', d)
+      setNewTramo(prev => ({
+        ...prev,
+        ...(d.origin ? { origen: d.origin } : {}),
+        ...(d.destination ? { destino: d.destination } : {}),
+        ...(d.loadNumber ? { numeroCarga: String(d.loadNumber) } : {}),
+        ...(d.freightAmount ? { fleteCobrado: d.freightAmount } : {}),
+        ...(d.originDate ? { fechaHora: d.originDate } : {}),
+        ...(d.destinationDate ? { fechaEntrega: d.destinationDate } : {}),
+        ...(d.commodity ? { tipoCarga: d.commodity } : {}),
+        ...(d.equipment ? { tipoEquipo: d.equipment } : {}),
+      }))
+    }
+    setStep(2)
   }
 
   const addTramo = () => {
@@ -513,7 +505,7 @@ export default function NuevaVueltaWizard() {
           <div className="flex justify-end">
             <button
               disabled={!info.camionId || !info.conductorPrincipalId || !info.baseSalida || !info.fechaSalida}
-              onClick={() => setStep(2)}
+              onClick={handleGoToStep2}
               className="bg-gold text-bg-deep font-semibold px-5 py-2 rounded-lg hover:bg-gold/90 transition-colors disabled:opacity-50"
             >
               {t('common.next')}
