@@ -61,6 +61,7 @@ export default function NuevaVueltaWizard() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const fileInputRef = useRef(null)
+  const pendingFileRef = useRef(null) // keeps File object alive for retry
   const [step, setStep] = useState(1)
 
   const [info, setInfo] = useState({
@@ -153,6 +154,7 @@ export default function NuevaVueltaWizard() {
   // Rate confirmation upload handler
   const handleRateConUpload = async (file) => {
     if (!file) return
+    pendingFileRef.current = file
     setRateConFile({ name: file.name, size: file.size })
     setRateConLoading(true)
     setRateConError(null)
@@ -172,10 +174,17 @@ export default function NuevaVueltaWizard() {
         missing: fields.filter(f => !f.filled).map(f => f.label),
       })
     } catch (err) {
-      setRateConError(err?.response?.data?.error ?? err.message ?? 'Error al procesar el archivo')
+      setRateConError({
+        message: err?.response?.data?.error ?? err.message ?? 'Error al procesar el archivo',
+        busy: err?.response?.status === 503,
+      })
     } finally {
       setRateConLoading(false)
     }
+  }
+
+  const handleRetry = () => {
+    if (pendingFileRef.current) handleRateConUpload(pendingFileRef.current)
   }
 
   const handleFilePick = (e) => {
@@ -389,8 +398,21 @@ export default function NuevaVueltaWizard() {
               )}
             </div>
 
-            {rateConError && (
-              <p className="text-danger text-xs mt-2">⚠ {rateConError}</p>
+            {rateConError && rateConError.busy && (
+              <div className="mt-2 rounded-lg px-3 py-2 bg-amber-500/10 border border-amber-500/20 flex items-center justify-between gap-3">
+                <p className="text-amber-400 text-xs">⚠ {rateConError.message}</p>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  disabled={rateConLoading}
+                  className="text-amber-400 text-xs border border-amber-400/40 rounded px-2 py-0.5 hover:bg-amber-400/10 transition-colors shrink-0 disabled:opacity-50"
+                >
+                  🔄 Reintentar
+                </button>
+              </div>
+            )}
+            {rateConError && !rateConError.busy && (
+              <p className="text-danger text-xs mt-2">⚠ {rateConError.message}</p>
             )}
 
             {rateConBanner && rateConBanner.filled.length > 0 && (

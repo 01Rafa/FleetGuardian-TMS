@@ -27,6 +27,7 @@ export const extractRateCon = catchAsync(async (req, res) => {
     const data = await extractRateConfirmation(req.file.buffer, req.file.mimetype)
     res.json(data)
   } catch (err) {
-    res.status(422).json({ error: err.message })
+    const busy = err.message?.includes('ocupado')
+    res.status(busy ? 503 : 422).json({ error: err.message })
   }
 })

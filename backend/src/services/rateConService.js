@@ -23,25 +23,52 @@ Return this exact structure:
   "specialInstructions": "string or null"
 }`
 
+function is503(err) {
+  return (
+    err?.status === 503 ||
+    err?.httpError?.status === 503 ||
+    String(err?.message ?? '').includes('503') ||
+    String(err?.message ?? '').toLowerCase().includes('service unavailable') ||
+    String(err?.message ?? '').toLowerCase().includes('overloaded')
+  )
+}
+
+async function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 export async function extractRateConfirmation(fileBuffer, mimeType) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-
   const base64 = fileBuffer.toString('base64')
 
-  const result = await model.generateContent([
-    { inlineData: { data: base64, mimeType } },
-    PROMPT,
-  ])
+  const delays = [2000, 4000, 8000]
+  let lastError
 
-  const text = result.response.text().trim()
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    try {
+      const result = await model.generateContent([
+        { inlineData: { data: base64, mimeType } },
+        PROMPT,
+      ])
 
-  // Strip accidental markdown fences if Gemini wraps them
-  const clean = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+      const text = result.response.text().trim()
+      const clean = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
 
-  try {
-    return JSON.parse(clean)
-  } catch {
-    throw new Error('No se pudo leer el rate confirmation')
+      try {
+        return JSON.parse(clean)
+      } catch {
+        throw new Error('No se pudo leer el rate confirmation')
+      }
+    } catch (err) {
+      lastError = err
+      if (!is503(err) || attempt === delays.length) break
+      await sleep(delays[attempt])
+    }
   }
+
+  if (is503(lastError)) {
+    throw new Error('El servicio de extracción está ocupado. Intenta de nuevo en unos segundos.')
+  }
+  throw lastError
 }
