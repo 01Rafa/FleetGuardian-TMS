@@ -3,11 +3,63 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 const PROMPT = `You are a data extraction assistant for a trucking management system. Extract fields from this rate confirmation document and return ONLY a valid JSON object with no markdown, no backticks, no explanation.
 If a field is not found, use null.
 
-IMPORTANT — brokerName and brokerMC rules:
-- brokerName: the freight BROKER or logistics company that is ARRANGING this load and paying the carrier. This is NOT the shipper, NOT the consignee, NOT the pickup location company, NOT the delivery location company. Look for labels like "Broker:", "Arranged by:", "Booking Agent:", "Logistics:", "Transportation:", or a company name near an MC# or broker authority field. If the document does not clearly identify a separate broker entity, return null.
-- brokerMC: the MC number belonging to the BROKER (not the carrier's MC). Usually labeled "Broker MC#", "MC#", "Authority:", or found directly next to the broker company name. If not found, return null.
+FIELD-BY-FIELD RULES:
 
-Return this exact structure:
+brokerName:
+- The freight BROKER or logistics COMPANY arranging this load and paying the carrier.
+- Return the COMPANY name, NOT an individual person's name (e.g. "MegaCorp Logistics" not "John Smith").
+- NOT the shipper, NOT the consignee, NOT the pickup/delivery facility name.
+- Look for labels: "Broker:", "Arranged by:", "Booking Agent:", "Logistics:", or a company name near MC# / broker authority.
+- If not clearly identified as a separate broker entity, return null.
+
+brokerMC:
+- The MC number of the BROKER only (not the carrier's MC).
+- Usually labeled "Broker MC#", "MC#", "Authority:", near the broker company name.
+- If not found, return null.
+
+loadNumber:
+- The primary reference number for this load.
+- Look for labels: "PO #", "MCL PO #", "Load #", "Load Number", "Reference #", "Ref #", "Confirmation #", "Order #".
+- Extract the alphanumeric value only, no label text.
+
+origin:
+- The CITY and STATE of the first pickup stop.
+- Format: "City, ST" (e.g. "Palm Bay, FL").
+- Extract ONLY city and state — do NOT include shed name, facility name, street address, zip code, or country.
+- Look in the STOPS table or pickup section. The city/state is usually in an "Address" or "City/State" column.
+
+originDate:
+- The pickup date at the origin stop.
+- Return as ISO date string "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SS" if time is given.
+
+destination:
+- The CITY and STATE of the final delivery stop.
+- Format: "City, ST" (e.g. "Lexington, MI").
+- Same rules as origin — city and state only, no address details.
+
+destinationDate:
+- The delivery date at the destination stop.
+- Return as ISO date string.
+
+freightAmount:
+- The total payment amount for this load.
+- Look in a RATE, CHARGES, or PAYMENT table. Labels: "Total", "Rate", "Amount", "Flat Rate", "Line Haul", "All-In Rate".
+- Return a number only — no currency symbols, no "USD", no "Flat".
+- If multiple line items exist, return the grand total.
+
+commodity:
+- The type of freight/cargo being hauled (e.g. "CUKES SIZED", "Produce", "Frozen Food").
+
+weight:
+- The shipment weight as a string including units (e.g. "42000 lbs").
+
+equipment:
+- The required trailer type (e.g. "Reefer 53FT", "Dry Van 53'", "Flatbed").
+
+specialInstructions:
+- Any special handling notes, temperature requirements, or carrier instructions.
+
+Return this exact JSON structure:
 {
   "brokerName": "string or null",
   "brokerMC": "string or null",
@@ -16,7 +68,7 @@ Return this exact structure:
   "originDate": "ISO date string or null",
   "destination": "string or null",
   "destinationDate": "ISO date string or null",
-  "freightAmount": "number or null",
+  "freightAmount": number or null,
   "commodity": "string or null",
   "weight": "string or null",
   "equipment": "string or null",
