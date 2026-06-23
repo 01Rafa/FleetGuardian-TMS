@@ -16,6 +16,7 @@ import { DateTimePicker } from './DatePicker'
 import { useRouteDistance } from '../hooks/useRouteDistance'
 
 const TIPOS_TRAMO = ['carga', 'vacio', 'regreso']
+const RATECON_TRAMO_ID = 'ratecon-leg-1'
 const CATEGORIAS = ['combustible', 'peaje', 'viatico', 'mantenimiento', 'otro']
 
 const RATECON_FIELD_LABELS = {
@@ -40,12 +41,13 @@ function SortableTramo({ tramo, index, onRemove }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: tramo.tempId })
   const style = { transform: CSS.Transform.toString(transform), transition }
   const meta = [tramo.tipoCarga, tramo.tipoEquipo].filter(Boolean).join(' · ')
+  const brokerLabel = tramo.broker?.nombre ?? (tramo.brokerHint ? `${tramo.brokerHint} *` : null)
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-3 bg-surface-2 border border-border-dim rounded-lg">
       <span {...attributes} {...listeners} className="text-text-muted cursor-grab text-lg">⠿</span>
       <div className="flex-1 grid grid-cols-2 gap-1 text-xs text-text-muted">
         <span>{tramo.origen} → {tramo.destino}</span>
-        <span>$ {tramo.fleteCobrado} · {t(`tramoTipo.${tramo.tipo}`)}{tramo.broker ? ` · ${tramo.broker.nombre}` : ''}</span>
+        <span>$ {tramo.fleteCobrado} · {t(`tramoTipo.${tramo.tipo}`)}{brokerLabel ? ` · ${brokerLabel}` : ''}</span>
         {meta && <span className="col-span-2 text-text-muted/70">{meta}</span>}
       </div>
       <button onClick={() => onRemove(index)} className="text-danger text-xs hover:opacity-80">✕</button>
@@ -98,30 +100,40 @@ export default function NuevaVueltaWizard() {
     }
   }, [calcMillas, calcKm, unit])
 
-  // Apply extracted rate con fields to leg 1 form whenever data arrives
+  // Auto-add leg 1 as a card whenever rate con data arrives
   useEffect(() => {
     if (!rateConData) return
-    setNewTramo(prev => ({
-      ...prev,
-      ...(rateConData.origin ? { origen: rateConData.origin } : {}),
-      ...(rateConData.destination ? { destino: rateConData.destination } : {}),
-      ...(rateConData.loadNumber ? { numeroCarga: String(rateConData.loadNumber) } : {}),
-      ...(rateConData.freightAmount != null ? { fleteCobrado: rateConData.freightAmount } : {}),
-      ...(rateConData.originDate ? { fechaHora: rateConData.originDate } : {}),
-      ...(rateConData.destinationDate ? { fechaEntrega: rateConData.destinationDate } : {}),
-      ...(rateConData.commodity ? { tipoCarga: rateConData.commodity } : {}),
-      ...(rateConData.equipment ? { tipoEquipo: rateConData.equipment } : {}),
-    }))
+    setTramos(prev => {
+      const withoutRateCon = prev.filter(t => t.tempId !== RATECON_TRAMO_ID)
+      return [{
+        origen: rateConData.origin ?? '',
+        destino: rateConData.destination ?? '',
+        broker: null,
+        brokerHint: rateConData.brokerName ?? null,
+        numeroCarga: rateConData.loadNumber ? String(rateConData.loadNumber) : '',
+        fleteCobrado: rateConData.freightAmount ?? 0,
+        kmRecorridos: '',
+        cargaTon: '',
+        tipo: 'carga',
+        fechaHora: rateConData.originDate ?? '',
+        tipoCarga: rateConData.commodity ?? '',
+        tipoEquipo: rateConData.equipment ?? '',
+        fechaEntrega: rateConData.destinationDate ?? '',
+        tempId: RATECON_TRAMO_ID,
+      }, ...withoutRateCon]
+    })
   }, [rateConData])
 
-  // Resolve broker by name after data arrives
+  // Resolve broker and patch the auto-added leg once found in DB
   useEffect(() => {
     if (!rateConData?.brokerName) return
     let cancelled = false
     brokersApi.search(rateConData.brokerName).then(results => {
       if (cancelled) return
       if (results.length > 0) {
-        setNewTramo(prev => ({ ...prev, broker: results[0] }))
+        setTramos(prev => prev.map(t =>
+          t.tempId === RATECON_TRAMO_ID ? { ...t, broker: results[0], brokerHint: null } : t
+        ))
         setRateConBrokerName(null)
       } else {
         setRateConBrokerName(rateConData.brokerName)
@@ -192,6 +204,7 @@ export default function NuevaVueltaWizard() {
           const broker = tr.broker
           delete tr.tempId
           delete tr.broker
+          delete tr.brokerHint
           return {
             ...tr,
             orden: i + 1,
