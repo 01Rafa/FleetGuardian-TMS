@@ -58,7 +58,7 @@ export const listVueltas = catchAsync(async (req, res) => {
       camion: true,
       conductorPrincipal: true,
       conductorSecundario: true,
-      tramos: { orderBy: { orden: 'asc' }, select: { destino: true, numeroCarga: true, distanceMillas: true } },
+      tramos: { orderBy: { orden: 'asc' }, select: { origen: true, destino: true, numeroCarga: true, distanceMillas: true } },
     },
     orderBy: { creadoEn: 'desc' },
   })

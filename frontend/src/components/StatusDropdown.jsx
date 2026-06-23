@@ -47,15 +47,13 @@ export function StatusDropdown({ vuelta }) {
   }
 
   return (
-    <div ref={ref} className="relative inline-block">
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }}
-        className="cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-gold/40"
-        title={t('trips.changeStatus', { defaultValue: 'Cambiar estado' })}
-      >
-        <StatusBadge estado={displayEstado} />
-      </button>
+    <div
+      ref={ref}
+      className="relative cursor-pointer select-none"
+      onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }}
+      title={t('trips.changeStatus', { defaultValue: 'Cambiar estado' })}
+    >
+      <StatusBadge estado={displayEstado} />
 
       {open && (
         <div className="absolute left-0 top-full mt-1 z-50 min-w-[160px] py-1 bg-surface border border-border-dim rounded-lg shadow-lg">

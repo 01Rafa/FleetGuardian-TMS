@@ -56,7 +56,7 @@ export function VueltaTable({ vueltas = [], selectable = false, selectedIds = []
                   return nums.length > 0 ? nums.join(', ') : v.codigo
                 })()}
               </td>
-              <td className="px-4 py-3 text-text-primary">{v.baseSalida} → {v.tramos?.[v.tramos.length - 1]?.destino ?? '...'}</td>
+              <td className="px-4 py-3 text-text-primary">{v.tramos?.[0]?.origen ?? v.baseSalida} → {v.tramos?.[v.tramos.length - 1]?.destino ?? '...'}</td>
               <td className="px-4 py-3 text-text-muted">{v.camion?.placa}</td>
               <td className="px-4 py-3 text-text-muted">
                 {v.conductorPrincipal?.nombre}
