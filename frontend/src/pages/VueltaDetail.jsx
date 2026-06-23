@@ -426,7 +426,7 @@ export default function VueltaDetail() {
             <div key={tramo.id} className="grid grid-cols-2 gap-2 p-3 bg-surface-2 rounded-lg border border-gold/30">
               <input className={f} placeholder={t('trips.leg.origin')} value={tramoForm.origen} onChange={e => setTramoForm(s => ({ ...s, origen: e.target.value }))} />
               <input className={f} placeholder={t('trips.leg.destination')} value={tramoForm.destino} onChange={e => setTramoForm(s => ({ ...s, destino: e.target.value }))} />
-              <BrokerAutocomplete value={tramoForm.broker} onChange={broker => setTramoForm(s => ({ ...s, broker }))} placeholder={t('trips.leg.broker')} className={f} />
+              <BrokerAutocomplete key={editingTramoId} value={tramoForm.broker} onChange={broker => setTramoForm(s => ({ ...s, broker }))} placeholder={t('trips.leg.broker')} className={f} />
               <input className={f} placeholder={t('trips.leg.loadNumber')} value={tramoForm.numeroCarga} onChange={e => setTramoForm(s => ({ ...s, numeroCarga: e.target.value }))} />
               <input className={f} type="number" placeholder={t('trips.leg.freight')} value={tramoForm.fleteCobrado} onChange={e => setTramoForm(s => ({ ...s, fleteCobrado: e.target.value }))} />
               <div>

@@ -44,10 +44,13 @@ const tramoBody = z.object({
   fleteCobrado: z.number().optional(),
   tipo: z.string().optional(),
   fechaHora: dateStr,
+  fechaEntrega: dateStr,
   brokerId: optUuid,
   notas: z.string().nullable().optional(),
   distanceMillas: z.number().nullable().optional(),
   distanceKm: z.number().nullable().optional(),
+  tipoCarga: z.string().nullable().optional(),
+  tipoEquipo: z.string().nullable().optional(),
 })
 
 const gastoBody = z.object({
@@ -109,10 +112,13 @@ export const updateTramoSchema = z.object({
   fleteCobrado: z.number().optional(),
   tipo: z.string().optional(),
   fechaHora: dateStr,
+  fechaEntrega: dateStr,
   brokerId: optUuid,
   notas: z.string().nullable().optional(),
   distanceMillas: z.number().nullable().optional(),
   distanceKm: z.number().nullable().optional(),
+  tipoCarga: z.string().nullable().optional(),
+  tipoEquipo: z.string().nullable().optional(),
 })
 
 // ── Gasto ─────────────────────────────────────────────────────────────────────
