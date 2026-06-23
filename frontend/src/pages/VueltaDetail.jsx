@@ -35,7 +35,7 @@ export default function VueltaDetail() {
   const [tramoForm, setTramoForm] = useState(null)
   const [editingGastoId, setEditingGastoId] = useState(null)
   const [gastoForm, setGastoForm] = useState(null)
-  const [newTramo, setNewTramo] = useState({ origen: '', destino: '', broker: null, numeroCarga: '', fleteCobrado: '', kmRecorridos: '', tipo: 'carga', fechaHora: '' })
+  const [newTramo, setNewTramo] = useState({ origen: '', destino: '', broker: null, numeroCarga: '', fleteCobrado: '', kmRecorridos: '', tipo: 'carga', fechaHora: '', tipoCarga: '', tipoEquipo: '', fechaEntrega: '' })
   const [newGasto, setNewGasto] = useState({ categoria: 'combustible', monto: '', descripcion: '' })
 
   // Auto-fill mileage for new tramo form
@@ -90,7 +90,7 @@ export default function VueltaDetail() {
 
   const createTramoMutation = useMutation({
     mutationFn: (data) => vueltasApi.createTramo(id, data),
-    onSuccess: () => { invalidate(); setNewTramo({ origen: '', destino: '', broker: null, numeroCarga: '', fleteCobrado: '', kmRecorridos: '', tipo: 'carga', fechaHora: '' }) },
+    onSuccess: () => { invalidate(); setNewTramo({ origen: '', destino: '', broker: null, numeroCarga: '', fleteCobrado: '', kmRecorridos: '', tipo: 'carga', fechaHora: '', tipoCarga: '', tipoEquipo: '', fechaEntrega: '' }) },
   })
 
   const updateTramoMutation = useMutation({
@@ -190,7 +190,7 @@ export default function VueltaDetail() {
   }
 
   const startEditTramo = (tramo) => {
-    setTramoForm({ origen: tramo.origen, destino: tramo.destino, broker: tramo.broker ?? null, numeroCarga: tramo.numeroCarga ?? '', fleteCobrado: tramo.fleteCobrado, kmRecorridos: tramo.kmRecorridos ?? '', tipo: tramo.tipo, fechaHora: toLocal(tramo.fechaHora), distanceMillas: tramo.distanceMillas ?? null, distanceKm: tramo.distanceKm ?? null })
+    setTramoForm({ origen: tramo.origen, destino: tramo.destino, broker: tramo.broker ?? null, numeroCarga: tramo.numeroCarga ?? '', fleteCobrado: tramo.fleteCobrado, kmRecorridos: tramo.kmRecorridos ?? '', tipo: tramo.tipo, fechaHora: toLocal(tramo.fechaHora), distanceMillas: tramo.distanceMillas ?? null, distanceKm: tramo.distanceKm ?? null, tipoCarga: tramo.tipoCarga ?? '', tipoEquipo: tramo.tipoEquipo ?? '', fechaEntrega: toLocal(tramo.fechaEntrega) })
     setEditingTramoId(tramo.id)
   }
 
@@ -206,6 +206,9 @@ export default function VueltaDetail() {
         kmRecorridos: tramoForm.kmRecorridos ? Number(tramoForm.kmRecorridos) : null,
         tipo: tramoForm.tipo,
         fechaHora: tramoForm.fechaHora ? new Date(tramoForm.fechaHora).toISOString() : null,
+        tipoCarga: tramoForm.tipoCarga || null,
+        tipoEquipo: tramoForm.tipoEquipo || null,
+        fechaEntrega: tramoForm.fechaEntrega ? new Date(tramoForm.fechaEntrega).toISOString() : null,
         ...(tramoForm.distanceMillas != null ? { distanceMillas: tramoForm.distanceMillas, distanceKm: tramoForm.distanceKm } : {}),
       },
     })
@@ -232,6 +235,9 @@ export default function VueltaDetail() {
       kmRecorridos: newTramo.kmRecorridos ? Number(newTramo.kmRecorridos) : null,
       tipo: newTramo.tipo,
       fechaHora: newTramo.fechaHora ? new Date(newTramo.fechaHora).toISOString() : null,
+      tipoCarga: newTramo.tipoCarga || null,
+      tipoEquipo: newTramo.tipoEquipo || null,
+      fechaEntrega: newTramo.fechaEntrega ? new Date(newTramo.fechaEntrega).toISOString() : null,
       ...(newTramo.distanceMillas != null ? { distanceMillas: newTramo.distanceMillas, distanceKm: newTramo.distanceKm } : {}),
     })
   }
@@ -447,6 +453,9 @@ export default function VueltaDetail() {
                 {TIPOS_TRAMO.map(v => <option key={v} value={v}>{t(`tramoTipo.${v}`)}</option>)}
               </select>
               <DateTimePicker value={tramoForm.fechaHora} onChange={v => setTramoForm(s => ({ ...s, fechaHora: v }))} />
+              <input className={f} placeholder="Commodity (ej. Produce)" value={tramoForm.tipoCarga} onChange={e => setTramoForm(s => ({ ...s, tipoCarga: e.target.value }))} />
+              <input className={f} placeholder="Equipo (ej. Reefer 53')" value={tramoForm.tipoEquipo} onChange={e => setTramoForm(s => ({ ...s, tipoEquipo: e.target.value }))} />
+              <DateTimePicker value={tramoForm.fechaEntrega} onChange={v => setTramoForm(s => ({ ...s, fechaEntrega: v }))} />
               <div className="col-span-2 flex gap-2">
                 <button onClick={() => saveTramo(tramo.id)} disabled={updateTramoMutation.isPending}
                   className="bg-gold text-bg-deep font-semibold text-xs px-3 py-1.5 rounded-lg hover:opacity-90 disabled:opacity-50">
@@ -458,7 +467,7 @@ export default function VueltaDetail() {
           ) : (
             <div key={tramo.id} className="flex items-center gap-3 p-3 bg-surface-2 rounded-lg border border-border-dim text-sm">
               <span className="flex-1 text-text-primary">{tramo.origen} → {tramo.destino}</span>
-              <span className="text-text-muted text-xs">{tramo.tipo}{tramo.kmRecorridos ? ` · ${tramo.kmRecorridos} ${unit}` : ''}{tramo.broker ? ` · ${tramo.broker.nombre}` : ''}{tramo.numeroCarga ? ` · #${tramo.numeroCarga}` : ''}</span>
+              <span className="text-text-muted text-xs">{tramo.tipo}{tramo.kmRecorridos ? ` · ${tramo.kmRecorridos} ${unit}` : ''}{tramo.broker ? ` · ${tramo.broker.nombre}` : ''}{tramo.numeroCarga ? ` · #${tramo.numeroCarga}` : ''}{tramo.tipoCarga ? ` · ${tramo.tipoCarga}` : ''}{tramo.tipoEquipo ? ` · ${tramo.tipoEquipo}` : ''}</span>
               {tramo.distanceMillas != null
                 ? <span className="text-text-muted text-xs">{tramo.distanceMillas.toFixed(1)} mi</span>
                 : <span className="text-amber-400 text-xs">{t('trips.enterMilesManually')}</span>
@@ -502,6 +511,9 @@ export default function VueltaDetail() {
             {TIPOS_TRAMO.map(v => <option key={v} value={v}>{t(`tramoTipo.${v}`)}</option>)}
           </select>
           <DateTimePicker value={newTramo.fechaHora} onChange={v => setNewTramo(s => ({ ...s, fechaHora: v }))} />
+          <input className={f} placeholder="Commodity (ej. Produce)" value={newTramo.tipoCarga} onChange={e => setNewTramo(s => ({ ...s, tipoCarga: e.target.value }))} />
+          <input className={f} placeholder="Equipo (ej. Reefer 53')" value={newTramo.tipoEquipo} onChange={e => setNewTramo(s => ({ ...s, tipoEquipo: e.target.value }))} />
+          <DateTimePicker value={newTramo.fechaEntrega} onChange={v => setNewTramo(s => ({ ...s, fechaEntrega: v }))} />
           <button onClick={addTramo} disabled={createTramoMutation.isPending}
             className="col-span-2 bg-gold/20 text-gold border border-gold/30 rounded-lg text-sm hover:bg-gold/30 disabled:opacity-50 transition-colors py-1.5">
             {createTramoMutation.isPending ? t('trips.leg.adding') : t('trips.leg.addLeg')}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { DndContext, closestCenter } from '@dnd-kit/core'
@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next'
 import { camionesApi } from '../api/camiones.api'
 import { conductoresApi } from '../api/conductores.api'
 import { vueltasApi, sugerenciasApi } from '../api/vueltas.api'
+import { brokersApi } from '../api/brokers.api'
+import { rateconApi } from '../api/ratecon.api'
 import BrokerAutocomplete from './BrokerAutocomplete'
 import { useDistanceUnit } from '../context/DistanceUnitContext'
 import { DateTimePicker } from './DatePicker'
@@ -16,16 +18,35 @@ import { useRouteDistance } from '../hooks/useRouteDistance'
 const TIPOS_TRAMO = ['carga', 'vacio', 'regreso']
 const CATEGORIAS = ['combustible', 'peaje', 'viatico', 'mantenimiento', 'otro']
 
+const RATECON_FIELD_LABELS = {
+  origin: 'Origen',
+  destination: 'Destino',
+  loadNumber: 'Número de carga',
+  freightAmount: 'Flete',
+  originDate: 'Fecha de recogida',
+  destinationDate: 'Fecha de entrega',
+  commodity: 'Tipo de carga',
+  equipment: 'Equipo',
+  brokerName: 'Broker',
+}
+
+function daysAgo(isoDate) {
+  if (!isoDate) return null
+  return Math.floor((Date.now() - new Date(isoDate).getTime()) / 86400000)
+}
+
 function SortableTramo({ tramo, index, onRemove }) {
   const { t } = useTranslation()
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: tramo.tempId })
   const style = { transform: CSS.Transform.toString(transform), transition }
+  const meta = [tramo.tipoCarga, tramo.tipoEquipo].filter(Boolean).join(' · ')
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-3 bg-surface-2 border border-border-dim rounded-lg">
       <span {...attributes} {...listeners} className="text-text-muted cursor-grab text-lg">⠿</span>
-      <div className="flex-1 grid grid-cols-2 gap-2 text-xs text-text-muted">
+      <div className="flex-1 grid grid-cols-2 gap-1 text-xs text-text-muted">
         <span>{tramo.origen} → {tramo.destino}</span>
         <span>$ {tramo.fleteCobrado} · {t(`tramoTipo.${tramo.tipo}`)}{tramo.broker ? ` · ${tramo.broker.nombre}` : ''}</span>
+        {meta && <span className="col-span-2 text-text-muted/70">{meta}</span>}
       </div>
       <button onClick={() => onRemove(index)} className="text-danger text-xs hover:opacity-80">✕</button>
     </div>
@@ -37,6 +58,7 @@ export default function NuevaVueltaWizard() {
   const { unit } = useDistanceUnit()
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const fileInputRef = useRef(null)
   const [step, setStep] = useState(1)
 
   const [info, setInfo] = useState({
@@ -46,8 +68,24 @@ export default function NuevaVueltaWizard() {
   const [showConductor2, setShowConductor2] = useState(false)
   const [hints, setHints] = useState({ camion: null, conductorPrincipal: null, conductorSecundario: null })
 
+  // Rate confirmation state
+  const [rateConFile, setRateConFile] = useState(null)
+  const [rateConData, setRateConData] = useState(null)
+  const [rateConLoading, setRateConLoading] = useState(false)
+  const [rateConError, setRateConError] = useState(null)
+  const [rateConBanner, setRateConBanner] = useState(null)
+  const [rateConDragging, setRateConDragging] = useState(false)
+
+  // Last-location state
+  const [truckLastLoc, setTruckLastLoc] = useState(null) // { location, date }
+  const [driverLastLoc, setDriverLastLoc] = useState(null)
+
   const [tramos, setTramos] = useState([])
-  const [newTramo, setNewTramo] = useState({ origen: '', destino: '', broker: null, numeroCarga: '', fleteCobrado: 0, kmRecorridos: '', cargaTon: '', tipo: 'carga', fechaHora: '', tempId: '' })
+  const [newTramo, setNewTramo] = useState({
+    origen: '', destino: '', broker: null, numeroCarga: '',
+    fleteCobrado: 0, kmRecorridos: '', cargaTon: '', tipo: 'carga',
+    fechaHora: '', tipoCarga: '', tipoEquipo: '', fechaEntrega: '', tempId: '',
+  })
 
   const { distanceMillas: calcMillas, distanceKm: calcKm, loading: calcLoading, error: calcError } =
     useRouteDistance(newTramo.origen, newTramo.destino)
@@ -55,7 +93,7 @@ export default function NuevaVueltaWizard() {
   useEffect(() => {
     if (calcMillas != null) {
       const dist = unit === 'mi' ? calcMillas : calcKm
-      setNewTramo(t => ({ ...t, kmRecorridos: dist?.toFixed(1) ?? t.kmRecorridos, distanceMillas: calcMillas, distanceKm: calcKm }))
+      setNewTramo(prev => ({ ...prev, kmRecorridos: dist?.toFixed(1) ?? prev.kmRecorridos, distanceMillas: calcMillas, distanceKm: calcKm }))
     }
   }, [calcMillas, calcKm, unit])
 
@@ -64,6 +102,70 @@ export default function NuevaVueltaWizard() {
 
   const { data: camiones = [] } = useQuery({ queryKey: ['camiones'], queryFn: camionesApi.list })
   const { data: conductores = [] } = useQuery({ queryKey: ['conductores'], queryFn: conductoresApi.list })
+
+  // Rate confirmation upload handler
+  const handleRateConUpload = async (file) => {
+    if (!file) return
+    setRateConFile({ name: file.name, size: file.size })
+    setRateConLoading(true)
+    setRateConError(null)
+    setRateConBanner(null)
+    try {
+      const data = await rateconApi.extract(file)
+      setRateConData(data)
+
+      // Resolve broker by name search (best-effort)
+      let resolvedBroker = null
+      if (data.brokerName) {
+        try {
+          const results = await brokersApi.search(data.brokerName)
+          if (results.length > 0) resolvedBroker = results[0]
+        } catch { /* broker resolution is optional */ }
+      }
+
+      // Auto-fill newTramo with extracted fields
+      setNewTramo(prev => ({
+        ...prev,
+        ...(data.origin ? { origen: data.origin } : {}),
+        ...(data.destination ? { destino: data.destination } : {}),
+        ...(data.loadNumber ? { numeroCarga: data.loadNumber } : {}),
+        ...(data.freightAmount != null ? { fleteCobrado: data.freightAmount } : {}),
+        ...(data.originDate ? { fechaHora: data.originDate } : {}),
+        ...(data.destinationDate ? { fechaEntrega: data.destinationDate } : {}),
+        ...(data.commodity ? { tipoCarga: data.commodity } : {}),
+        ...(data.equipment ? { tipoEquipo: data.equipment } : {}),
+        ...(resolvedBroker ? { broker: resolvedBroker } : {}),
+      }))
+
+      // Compute filled/missing for banners
+      const fields = Object.entries(RATECON_FIELD_LABELS).map(([key, label]) => {
+        if (key === 'brokerName') return { label, filled: !!resolvedBroker }
+        const val = data[key]
+        return { label, filled: val != null && val !== '' }
+      })
+      setRateConBanner({
+        filled: fields.filter(f => f.filled).map(f => f.label),
+        missing: fields.filter(f => !f.filled).map(f => f.label),
+      })
+    } catch (err) {
+      setRateConError(err?.response?.data?.error ?? err.message ?? 'Error al procesar el archivo')
+    } finally {
+      setRateConLoading(false)
+    }
+  }
+
+  const handleFilePick = (e) => {
+    const file = e.target.files?.[0]
+    if (file) handleRateConUpload(file)
+    e.target.value = ''
+  }
+
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setRateConDragging(false)
+    const file = e.dataTransfer?.files?.[0]
+    if (file) handleRateConUpload(file)
+  }
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -74,19 +176,22 @@ export default function NuevaVueltaWizard() {
         baseSalida: info.baseSalida,
         fechaSalida: new Date(info.fechaSalida).toISOString(),
         tramos: tramos.map((tramo, i) => {
-          const t = { ...tramo }
-          const broker = t.broker
-          delete t.tempId
-          delete t.broker
+          const tr = { ...tramo }
+          const broker = tr.broker
+          delete tr.tempId
+          delete tr.broker
           return {
-            ...t,
+            ...tr,
             orden: i + 1,
             brokerId: broker?.id ?? null,
-            numeroCarga: t.numeroCarga || null,
-            fleteCobrado: Number(t.fleteCobrado),
-            kmRecorridos: t.kmRecorridos ? Number(t.kmRecorridos) : null,
-            cargaTon: t.cargaTon ? Number(t.cargaTon) : null,
-            fechaHora: t.fechaHora ? new Date(t.fechaHora).toISOString() : null,
+            numeroCarga: tr.numeroCarga || null,
+            fleteCobrado: Number(tr.fleteCobrado),
+            kmRecorridos: tr.kmRecorridos ? Number(tr.kmRecorridos) : null,
+            cargaTon: tr.cargaTon ? Number(tr.cargaTon) : null,
+            fechaHora: tr.fechaHora ? new Date(tr.fechaHora).toISOString() : null,
+            fechaEntrega: tr.fechaEntrega ? new Date(tr.fechaEntrega).toISOString() : null,
+            tipoCarga: tr.tipoCarga || null,
+            tipoEquipo: tr.tipoEquipo || null,
           }
         }),
         gastos: gastos.map(gasto => ({ ...gasto, monto: Number(gasto.monto) })),
@@ -98,36 +203,72 @@ export default function NuevaVueltaWizard() {
     },
   })
 
-  // --- Autocomplete handlers ---
   const onConductorPrincipalChange = async (conductorId) => {
     const currentCamionId = info.camionId
     setInfo(i => ({ ...i, conductorPrincipalId: conductorId }))
-    if (!conductorId) { setHints(h => ({ ...h, camion: null })); return }
+    if (!conductorId) {
+      setHints(h => ({ ...h, camion: null }))
+      setDriverLastLoc(null)
+      return
+    }
     try {
       const { camion } = await sugerenciasApi.byConductor(conductorId)
       setHints(h => ({ ...h, camion: camion ?? null }))
       if (camion && !currentCamionId) setInfo(i => ({ ...i, camionId: camion.id }))
-      // Suggest secondary conductor if second conductor panel is open
       if (showConductor2 && info.conductorSecundarioId === '') {
         const { conductor } = await sugerenciasApi.byConductorPrincipal(conductorId)
         setHints(h => ({ ...h, conductorSecundario: conductor ?? null }))
       }
-    } catch {
-      // Suggestions are optional.
-    }
+    } catch { /* suggestions are optional */ }
+    // Last location — only fills origin if no truck location and rate con didn't set it
+    try {
+      const { lastLocation, lastTripDate } = await conductoresApi.lastLocation(conductorId)
+      if (lastLocation) {
+        setDriverLastLoc({ location: lastLocation, date: lastTripDate })
+        setNewTramo(prev => {
+          if (!prev.origen && !truckLastLoc?.location) {
+            return { ...prev, origen: lastLocation }
+          }
+          return prev
+        })
+      } else {
+        setDriverLastLoc(null)
+      }
+    } catch { /* last location is optional */ }
   }
 
   const onCamionChange = async (camionId) => {
     const currentConductorId = info.conductorPrincipalId
     setInfo(i => ({ ...i, camionId }))
-    if (!camionId) { setHints(h => ({ ...h, conductorPrincipal: null })); return }
+    if (!camionId) {
+      setHints(h => ({ ...h, conductorPrincipal: null }))
+      setTruckLastLoc(null)
+      // Restore driver location if available and rate con didn't set origin
+      setNewTramo(prev => {
+        if (!rateConData?.origin) {
+          return { ...prev, origen: driverLastLoc?.location ?? '' }
+        }
+        return prev
+      })
+      return
+    }
     try {
       const { conductor } = await sugerenciasApi.byCamion(camionId)
       setHints(h => ({ ...h, conductorPrincipal: conductor ?? null }))
       if (conductor && !currentConductorId) setInfo(i => ({ ...i, conductorPrincipalId: conductor.id }))
-    } catch {
-      // Suggestions are optional.
-    }
+    } catch { /* suggestions are optional */ }
+    // Last location — truck always wins over driver
+    try {
+      const { lastLocation, lastTripDate } = await camionesApi.lastLocation(camionId)
+      if (lastLocation) {
+        setTruckLastLoc({ location: lastLocation, date: lastTripDate })
+        if (!rateConData?.origin) {
+          setNewTramo(prev => ({ ...prev, origen: lastLocation }))
+        }
+      } else {
+        setTruckLastLoc(null)
+      }
+    } catch { /* last location is optional */ }
   }
 
   const onShowConductor2 = async () => {
@@ -137,22 +278,23 @@ export default function NuevaVueltaWizard() {
         const { conductor } = await sugerenciasApi.byConductorPrincipal(info.conductorPrincipalId)
         setHints(h => ({ ...h, conductorSecundario: conductor ?? null }))
         if (conductor) setInfo(i => ({ ...i, conductorSecundarioId: conductor.id }))
-      } catch {
-        // Suggestions are optional.
-      }
+      } catch { /* suggestions are optional */ }
     }
   }
 
-  // --- Trip / expense handlers ---
   const addTramo = () => {
     if (!newTramo.origen || !newTramo.destino) return
-    setTramos(t => [...t, { ...newTramo, tempId: crypto.randomUUID() }])
-    setNewTramo({ origen: '', destino: '', broker: null, numeroCarga: '', fleteCobrado: 0, kmRecorridos: '', cargaTon: '', tipo: 'carga', fechaHora: '', tempId: '' })
+    setTramos(prev => [...prev, { ...newTramo, tempId: crypto.randomUUID() }])
+    setNewTramo({
+      origen: '', destino: '', broker: null, numeroCarga: '',
+      fleteCobrado: 0, kmRecorridos: '', cargaTon: '', tipo: 'carga',
+      fechaHora: '', tipoCarga: '', tipoEquipo: '', fechaEntrega: '', tempId: '',
+    })
   }
 
   const addGasto = () => {
     if (!newGasto.monto) return
-    setGastos(g => [...g, { ...newGasto }])
+    setGastos(prev => [...prev, { ...newGasto }])
     setNewGasto({ categoria: 'combustible', monto: 0, descripcion: '' })
   }
 
@@ -166,13 +308,19 @@ export default function NuevaVueltaWizard() {
     }
   }
 
-  const ingresoTotal = tramos.reduce((s, t) => s + Number(t.fleteCobrado), 0)
+  const ingresoTotal = tramos.reduce((s, tr) => s + Number(tr.fleteCobrado), 0)
   const gastoTotal = gastos.reduce((s, g) => s + Number(g.monto), 0)
 
   const inputCls = 'w-full bg-surface-2 border border-border-dim rounded-lg px-3 py-2 text-text-primary text-sm focus:outline-none focus:border-gold'
 
   const conductorPrincipalNombre = conductores.find(c => c.id === info.conductorPrincipalId)?.nombre
   const camionNombre = camiones.find(c => c.id === info.camionId)?.placa
+
+  // Effective last-location for Step 2 hint: truck > driver
+  const effectiveLastLoc = truckLastLoc ?? driverLastLoc
+  const effectiveLastLocLabel = effectiveLastLoc
+    ? `📍 Última ubicación (${truckLastLoc ? 'camión' : 'conductor'}${(() => { const d = daysAgo(effectiveLastLoc.date); return d != null ? `, hace ${d} día${d !== 1 ? 's' : ''}` : '' })()})`
+    : null
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -188,15 +336,55 @@ export default function NuevaVueltaWizard() {
       {step === 1 && (
         <div className="bg-surface border border-border-dim rounded-xl p-6 space-y-4">
           <h3 className="font-serif text-lg text-text-primary">{t('trips.wizard.step1Title')}</h3>
+
+          {/* Rate Confirmation Upload */}
+          <div>
+            <p className="text-text-muted text-xs uppercase tracking-wide mb-2">📄 Rate Confirmation (opcional)</p>
+            <div
+              onDragOver={e => { e.preventDefault(); setRateConDragging(true) }}
+              onDragLeave={() => setRateConDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${rateConDragging ? 'border-gold bg-gold/5' : 'border-border-dim hover:border-gold/50'}`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".pdf,image/jpeg,image/png,image/webp"
+                onChange={handleFilePick}
+              />
+              {rateConLoading ? (
+                <p className="text-text-muted text-sm animate-pulse">Leyendo rate confirmation...</p>
+              ) : rateConFile ? (
+                <p className="text-text-muted text-sm">📎 {rateConFile.name}</p>
+              ) : (
+                <p className="text-text-muted text-sm">Arrastra aquí o haz clic · PDF, JPG, PNG — máx 10 MB</p>
+              )}
+            </div>
+
+            {rateConError && (
+              <p className="text-danger text-xs mt-2">⚠ {rateConError}</p>
+            )}
+
+            {rateConBanner && rateConBanner.filled.length > 0 && (
+              <div className="mt-2 rounded-lg px-3 py-2 bg-success/10 border border-success/20">
+                <p className="text-success text-xs">✓ {rateConBanner.filled.length} campos extraídos: {rateConBanner.filled.join(', ')}</p>
+              </div>
+            )}
+
+            {rateConBanner && rateConBanner.missing.length > 0 && (
+              <div className="mt-1 rounded-lg px-3 py-2 bg-amber-500/10 border border-amber-500/20">
+                <p className="text-amber-400 text-xs">No encontramos: {rateConBanner.missing.join(', ')} — verifica manualmente</p>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             {/* Conductor Principal */}
             <div>
               <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">{t('trips.detail.mainDriver')}</label>
-              <select
-                value={info.conductorPrincipalId}
-                onChange={e => onConductorPrincipalChange(e.target.value)}
-                className={inputCls}
-              >
+              <select value={info.conductorPrincipalId} onChange={e => onConductorPrincipalChange(e.target.value)} className={inputCls}>
                 <option value="">Seleccionar...</option>
                 {conductores.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
@@ -208,11 +396,7 @@ export default function NuevaVueltaWizard() {
             {/* Camión */}
             <div>
               <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">{t('trips.detail.truck')}</label>
-              <select
-                value={info.camionId}
-                onChange={e => onCamionChange(e.target.value)}
-                className={inputCls}
-              >
+              <select value={info.camionId} onChange={e => onCamionChange(e.target.value)} className={inputCls}>
                 <option value="">Seleccionar...</option>
                 {camiones.map(c => <option key={c.id} value={c.id}>{c.placa} — {c.modelo}</option>)}
               </select>
@@ -224,30 +408,18 @@ export default function NuevaVueltaWizard() {
             {/* Conductor Secundario */}
             <div className="col-span-2">
               {!showConductor2 ? (
-                <button
-                  type="button"
-                  onClick={onShowConductor2}
-                  className="text-text-muted text-xs hover:text-gold transition-colors"
-                >
+                <button type="button" onClick={onShowConductor2} className="text-text-muted text-xs hover:text-gold transition-colors">
                   {t('trips.detail.addSecondDriver')}
                 </button>
               ) : (
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-text-muted text-xs uppercase tracking-wide">{t('trips.detail.secondDriver')}</label>
-                    <button
-                      type="button"
-                      onClick={() => { setShowConductor2(false); setInfo(i => ({ ...i, conductorSecundarioId: '' })); setHints(h => ({ ...h, conductorSecundario: null })) }}
-                      className="text-text-muted text-xs hover:text-danger"
-                    >
+                    <button type="button" onClick={() => { setShowConductor2(false); setInfo(i => ({ ...i, conductorSecundarioId: '' })); setHints(h => ({ ...h, conductorSecundario: null })) }} className="text-text-muted text-xs hover:text-danger">
                       {t('trips.detail.removeDriver')}
                     </button>
                   </div>
-                  <select
-                    value={info.conductorSecundarioId}
-                    onChange={e => setInfo(i => ({ ...i, conductorSecundarioId: e.target.value }))}
-                    className={inputCls}
-                  >
+                  <select value={info.conductorSecundarioId} onChange={e => setInfo(i => ({ ...i, conductorSecundarioId: e.target.value }))} className={inputCls}>
                     <option value="">Ninguno</option>
                     {conductores.filter(c => c.id !== info.conductorPrincipalId).map(c => (
                       <option key={c.id} value={c.id}>{c.nombre}</option>
@@ -269,6 +441,7 @@ export default function NuevaVueltaWizard() {
               <DateTimePicker value={info.fechaSalida} onChange={v => setInfo(i => ({ ...i, fechaSalida: v }))} />
             </div>
           </div>
+
           <div className="flex justify-end">
             <button
               disabled={!info.camionId || !info.conductorPrincipalId || !info.baseSalida || !info.fechaSalida}
@@ -285,49 +458,40 @@ export default function NuevaVueltaWizard() {
         <div className="bg-surface border border-border-dim rounded-xl p-6 space-y-4">
           <h3 className="font-serif text-lg text-text-primary">{t('trips.wizard.step2Title')}</h3>
           <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={tramos.map(t => t.tempId)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={tramos.map(tr => tr.tempId)} strategy={verticalListSortingStrategy}>
               <div className="space-y-2">
-                {tramos.map((t, i) => (
-                  <SortableTramo key={t.tempId} tramo={t} index={i} onRemove={(idx) => setTramos(arr => arr.filter((_, j) => j !== idx))} />
+                {tramos.map((tr, i) => (
+                  <SortableTramo key={tr.tempId} tramo={tr} index={i} onRemove={(idx) => setTramos(arr => arr.filter((_, j) => j !== idx))} />
                 ))}
               </div>
             </SortableContext>
           </DndContext>
           <div className="grid grid-cols-2 gap-3 p-4 bg-surface-2 rounded-lg border border-border-dim">
-            <input value={newTramo.origen} onChange={e => setNewTramo(t => ({ ...t, origen: e.target.value }))} className={inputCls} placeholder={t('trips.leg.origin')} />
-            <input value={newTramo.destino} onChange={e => setNewTramo(t => ({ ...t, destino: e.target.value }))} className={inputCls} placeholder={t('trips.leg.destination')} />
-            <BrokerAutocomplete
-              value={newTramo.broker}
-              onChange={broker => setNewTramo(t => ({ ...t, broker }))}
-              placeholder={t('trips.leg.broker')}
-              className={inputCls}
-            />
-            <input value={newTramo.numeroCarga} onChange={e => setNewTramo(t => ({ ...t, numeroCarga: e.target.value }))} className={inputCls} placeholder={t('trips.leg.loadNumber')} />
-            <input type="number" value={newTramo.fleteCobrado} onChange={e => setNewTramo(t => ({ ...t, fleteCobrado: e.target.value }))} className={inputCls} placeholder={t('trips.leg.freight')} />
             <div>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={newTramo.kmRecorridos}
-                  onChange={e => setNewTramo(t => ({ ...t, kmRecorridos: e.target.value }))}
-                  className={inputCls + (calcLoading ? ' opacity-50' : '')}
-                  placeholder={unit === 'mi' ? 'Miles' : 'KM'}
-                />
-                {calcLoading && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs animate-pulse">…</span>
-                )}
-              </div>
-              {calcMillas != null && !calcLoading && (
-                <p className="text-green-400 text-xs mt-1">✓ calculado automáticamente — {calcMillas.toFixed(1)} mi</p>
-              )}
-              {calcError && !calcLoading && (
-                <p className="text-amber-400 text-xs mt-1">{t('trips.enterMilesManually')}</p>
+              <input value={newTramo.origen} onChange={e => setNewTramo(prev => ({ ...prev, origen: e.target.value }))} className={inputCls} placeholder={t('trips.leg.origin')} />
+              {effectiveLastLocLabel && newTramo.origen === effectiveLastLoc?.location && (
+                <p className="text-gold/70 text-xs mt-1">{effectiveLastLocLabel}</p>
               )}
             </div>
-            <select value={newTramo.tipo} onChange={e => setNewTramo(t => ({ ...t, tipo: e.target.value }))} className={inputCls}>
+            <input value={newTramo.destino} onChange={e => setNewTramo(prev => ({ ...prev, destino: e.target.value }))} className={inputCls} placeholder={t('trips.leg.destination')} />
+            <BrokerAutocomplete value={newTramo.broker} onChange={broker => setNewTramo(prev => ({ ...prev, broker }))} placeholder={t('trips.leg.broker')} className={inputCls} />
+            <input value={newTramo.numeroCarga} onChange={e => setNewTramo(prev => ({ ...prev, numeroCarga: e.target.value }))} className={inputCls} placeholder={t('trips.leg.loadNumber')} />
+            <input type="number" value={newTramo.fleteCobrado} onChange={e => setNewTramo(prev => ({ ...prev, fleteCobrado: e.target.value }))} className={inputCls} placeholder={t('trips.leg.freight')} />
+            <div>
+              <div className="relative">
+                <input type="number" value={newTramo.kmRecorridos} onChange={e => setNewTramo(prev => ({ ...prev, kmRecorridos: e.target.value }))} className={inputCls + (calcLoading ? ' opacity-50' : '')} placeholder={unit === 'mi' ? 'Miles' : 'KM'} />
+                {calcLoading && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted text-xs animate-pulse">…</span>}
+              </div>
+              {calcMillas != null && !calcLoading && <p className="text-green-400 text-xs mt-1">✓ calculado automáticamente — {calcMillas.toFixed(1)} mi</p>}
+              {calcError && !calcLoading && <p className="text-amber-400 text-xs mt-1">{t('trips.enterMilesManually')}</p>}
+            </div>
+            <select value={newTramo.tipo} onChange={e => setNewTramo(prev => ({ ...prev, tipo: e.target.value }))} className={inputCls}>
               {TIPOS_TRAMO.map(tipo => <option key={tipo} value={tipo}>{t(`tramoTipo.${tipo}`)}</option>)}
             </select>
-            <DateTimePicker value={newTramo.fechaHora} onChange={v => setNewTramo(t => ({ ...t, fechaHora: v }))} />
+            <DateTimePicker value={newTramo.fechaHora} onChange={v => setNewTramo(prev => ({ ...prev, fechaHora: v }))} />
+            <input value={newTramo.tipoCarga} onChange={e => setNewTramo(prev => ({ ...prev, tipoCarga: e.target.value }))} className={inputCls} placeholder="Commodity (ej. Produce)" />
+            <input value={newTramo.tipoEquipo} onChange={e => setNewTramo(prev => ({ ...prev, tipoEquipo: e.target.value }))} className={inputCls} placeholder="Equipo (ej. Reefer 53')" />
+            <DateTimePicker value={newTramo.fechaEntrega} onChange={v => setNewTramo(prev => ({ ...prev, fechaEntrega: v }))} />
             <button onClick={addTramo} className="col-span-2 bg-gold/20 text-gold border border-gold/30 rounded-lg text-sm hover:bg-gold/30 transition-colors py-2">{t('trips.leg.addLeg')}</button>
           </div>
           <p className="text-text-muted text-xs">{t('trips.wizard.calculatedIncome')} <span className="text-success">${ingresoTotal.toLocaleString('en-US')}</span></p>
@@ -341,9 +505,7 @@ export default function NuevaVueltaWizard() {
               >
                 {t('common.next')}
               </button>
-              {tramos.length === 0 && (
-                <p className="text-danger text-xs">{t('trips.wizard.atLeastOneLeg')}</p>
-              )}
+              {tramos.length === 0 && <p className="text-danger text-xs">{t('trips.wizard.atLeastOneLeg')}</p>}
             </div>
           </div>
         </div>

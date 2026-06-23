@@ -168,6 +168,9 @@ model Tramo {
   notas          String?
   distanceMillas Float?
   distanceKm     Float?
+  tipoCarga      String?
+  tipoEquipo     String?
+  fechaEntrega   DateTime?
   gastos         Gasto[]
 }
 

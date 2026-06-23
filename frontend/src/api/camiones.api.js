@@ -8,6 +8,7 @@ export const camionesApi = {
   delete: (id) => api.delete(`/camiones/${id}`).then(r => r.data),
   createMantenimiento: (camionId, data) => api.post(`/camiones/${camionId}/mantenimientos`, data).then(r => r.data),
   createPieza: (camionId, data) => api.post(`/camiones/${camionId}/piezas`, data).then(r => r.data),
+  lastLocation: (id) => api.get(`/camiones/${id}/last-location`).then(r => r.data),
 }
 
 export const mantenimientosApi = {

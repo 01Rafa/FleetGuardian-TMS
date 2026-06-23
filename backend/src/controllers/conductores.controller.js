@@ -61,3 +61,30 @@ export const deleteConductor = catchAsync(async (req, res) => {
     throw e
   }
 })
+
+export const getLastLocation = catchAsync(async (req, res) => {
+  const { empresaId } = req.user
+  const vuelta = await prisma.vuelta.findFirst({
+    where: {
+      empresaId,
+      tramos: { some: {} },
+      OR: [
+        { conductorPrincipalId: req.params.id },
+        { conductorSecundarioId: req.params.id },
+      ],
+    },
+    orderBy: { fechaSalida: 'desc' },
+    include: {
+      tramos: { orderBy: { orden: 'desc' }, take: 1 },
+    },
+  })
+
+  if (!vuelta || !vuelta.tramos.length) {
+    return res.json({ lastLocation: null, lastTripDate: null })
+  }
+
+  res.json({
+    lastLocation: vuelta.tramos[0].destino,
+    lastTripDate: vuelta.fechaSalida.toISOString(),
+  })
+})
