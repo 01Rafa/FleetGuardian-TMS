@@ -125,16 +125,36 @@ export default function NuevaVueltaWizard() {
     })
   }, [rateConData])
 
-  // Resolve broker and patch the auto-added leg once found in DB
+  // Pre-fill the leg form when the user enters Step 2 with rate con data
+  useEffect(() => {
+    if (step !== 2 || !rateConData) return
+    console.log('rateConData in Step 2:', rateConData)
+    console.log('setting newTramo from rateConData')
+    setNewTramo(prev => ({
+      ...prev,
+      origen: rateConData.origin ?? prev.origen,
+      destino: rateConData.destination ?? prev.destino,
+      numeroCarga: rateConData.loadNumber ? String(rateConData.loadNumber) : prev.numeroCarga,
+      fleteCobrado: rateConData.freightAmount ?? prev.fleteCobrado,
+      fechaHora: rateConData.originDate ?? prev.fechaHora,
+      fechaEntrega: rateConData.destinationDate ?? prev.fechaEntrega,
+      tipoCarga: rateConData.commodity ?? prev.tipoCarga,
+      tipoEquipo: rateConData.equipment ?? prev.tipoEquipo,
+    }))
+  }, [step, rateConData])
+
+  // Resolve broker — patch the auto-added card and pre-fill the form
   useEffect(() => {
     if (!rateConData?.brokerName) return
     let cancelled = false
     brokersApi.search(rateConData.brokerName).then(results => {
       if (cancelled) return
       if (results.length > 0) {
+        const broker = results[0]
         setTramos(prev => prev.map(t =>
-          t.tempId === RATECON_TRAMO_ID ? { ...t, broker: results[0], brokerHint: null } : t
+          t.tempId === RATECON_TRAMO_ID ? { ...t, broker, brokerHint: null } : t
         ))
+        setNewTramo(prev => ({ ...prev, broker }))
         setRateConBrokerName(null)
       } else {
         setRateConBrokerName(rateConData.brokerName)
