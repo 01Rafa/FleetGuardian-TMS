@@ -75,6 +75,7 @@ export default function NuevaVueltaWizard() {
   const [rateConError, setRateConError] = useState(null)
   const [rateConBanner, setRateConBanner] = useState(null)
   const [rateConDragging, setRateConDragging] = useState(false)
+  const [rateConBrokerName, setRateConBrokerName] = useState(null) // raw name when not DB-matched
 
   // Last-location state
   const [truckLastLoc, setTruckLastLoc] = useState(null) // { location, date }
@@ -97,6 +98,40 @@ export default function NuevaVueltaWizard() {
     }
   }, [calcMillas, calcKm, unit])
 
+  // Apply extracted rate con fields to leg 1 form whenever data arrives
+  useEffect(() => {
+    if (!rateConData) return
+    setNewTramo(prev => ({
+      ...prev,
+      ...(rateConData.origin ? { origen: rateConData.origin } : {}),
+      ...(rateConData.destination ? { destino: rateConData.destination } : {}),
+      ...(rateConData.loadNumber ? { numeroCarga: String(rateConData.loadNumber) } : {}),
+      ...(rateConData.freightAmount != null ? { fleteCobrado: rateConData.freightAmount } : {}),
+      ...(rateConData.originDate ? { fechaHora: rateConData.originDate } : {}),
+      ...(rateConData.destinationDate ? { fechaEntrega: rateConData.destinationDate } : {}),
+      ...(rateConData.commodity ? { tipoCarga: rateConData.commodity } : {}),
+      ...(rateConData.equipment ? { tipoEquipo: rateConData.equipment } : {}),
+    }))
+  }, [rateConData])
+
+  // Resolve broker by name after data arrives
+  useEffect(() => {
+    if (!rateConData?.brokerName) return
+    let cancelled = false
+    brokersApi.search(rateConData.brokerName).then(results => {
+      if (cancelled) return
+      if (results.length > 0) {
+        setNewTramo(prev => ({ ...prev, broker: results[0] }))
+        setRateConBrokerName(null)
+      } else {
+        setRateConBrokerName(rateConData.brokerName)
+      }
+    }).catch(() => {
+      if (!cancelled) setRateConBrokerName(rateConData.brokerName)
+    })
+    return () => { cancelled = true }
+  }, [rateConData])
+
   const [gastos, setGastos] = useState([])
   const [newGasto, setNewGasto] = useState({ categoria: 'combustible', monto: 0, descripcion: '' })
 
@@ -110,36 +145,13 @@ export default function NuevaVueltaWizard() {
     setRateConLoading(true)
     setRateConError(null)
     setRateConBanner(null)
+    setRateConBrokerName(null)
     try {
       const data = await rateconApi.extract(file)
+      // Setting rateConData triggers useEffects that populate newTramo and resolve broker
       setRateConData(data)
-
-      // Resolve broker by name search (best-effort)
-      let resolvedBroker = null
-      if (data.brokerName) {
-        try {
-          const results = await brokersApi.search(data.brokerName)
-          if (results.length > 0) resolvedBroker = results[0]
-        } catch { /* broker resolution is optional */ }
-      }
-
-      // Auto-fill newTramo with extracted fields
-      setNewTramo(prev => ({
-        ...prev,
-        ...(data.origin ? { origen: data.origin } : {}),
-        ...(data.destination ? { destino: data.destination } : {}),
-        ...(data.loadNumber ? { numeroCarga: data.loadNumber } : {}),
-        ...(data.freightAmount != null ? { fleteCobrado: data.freightAmount } : {}),
-        ...(data.originDate ? { fechaHora: data.originDate } : {}),
-        ...(data.destinationDate ? { fechaEntrega: data.destinationDate } : {}),
-        ...(data.commodity ? { tipoCarga: data.commodity } : {}),
-        ...(data.equipment ? { tipoEquipo: data.equipment } : {}),
-        ...(resolvedBroker ? { broker: resolvedBroker } : {}),
-      }))
-
-      // Compute filled/missing for banners
+      // Compute banner from raw extraction (broker marked filled if Gemini found a name)
       const fields = Object.entries(RATECON_FIELD_LABELS).map(([key, label]) => {
-        if (key === 'brokerName') return { label, filled: !!resolvedBroker }
         const val = data[key]
         return { label, filled: val != null && val !== '' }
       })
@@ -290,6 +302,7 @@ export default function NuevaVueltaWizard() {
       fleteCobrado: 0, kmRecorridos: '', cargaTon: '', tipo: 'carga',
       fechaHora: '', tipoCarga: '', tipoEquipo: '', fechaEntrega: '', tempId: '',
     })
+    setRateConBrokerName(null)
   }
 
   const addGasto = () => {
@@ -474,7 +487,7 @@ export default function NuevaVueltaWizard() {
               )}
             </div>
             <input value={newTramo.destino} onChange={e => setNewTramo(prev => ({ ...prev, destino: e.target.value }))} className={inputCls} placeholder={t('trips.leg.destination')} />
-            <BrokerAutocomplete value={newTramo.broker} onChange={broker => setNewTramo(prev => ({ ...prev, broker }))} placeholder={t('trips.leg.broker')} className={inputCls} />
+            <BrokerAutocomplete value={newTramo.broker} onChange={broker => setNewTramo(prev => ({ ...prev, broker }))} placeholder={t('trips.leg.broker')} className={inputCls} initialQuery={newTramo.broker ? null : rateConBrokerName} />
             <input value={newTramo.numeroCarga} onChange={e => setNewTramo(prev => ({ ...prev, numeroCarga: e.target.value }))} className={inputCls} placeholder={t('trips.leg.loadNumber')} />
             <input type="number" value={newTramo.fleteCobrado} onChange={e => setNewTramo(prev => ({ ...prev, fleteCobrado: e.target.value }))} className={inputCls} placeholder={t('trips.leg.freight')} />
             <div>

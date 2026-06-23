@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { brokersApi } from '../api/brokers.api'
 
-export default function BrokerAutocomplete({ value, onChange, placeholder = 'Broker', className }) {
+export default function BrokerAutocomplete({ value, onChange, placeholder = 'Broker', className, initialQuery }) {
   const { t } = useTranslation()
-  const [inputText, setInputText] = useState(value?.nombre ?? '')
+  const [inputText, setInputText] = useState(value?.nombre ?? initialQuery ?? '')
   const [suggestions, setSuggestions] = useState([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -14,6 +14,10 @@ export default function BrokerAutocomplete({ value, onChange, placeholder = 'Bro
   useEffect(() => {
     setInputText(value?.nombre ?? '')
   }, [value?.id])
+
+  useEffect(() => {
+    if (!value && initialQuery) setInputText(initialQuery)
+  }, [initialQuery])
 
   const search = useCallback((q) => {
     clearTimeout(debounceRef.current)
