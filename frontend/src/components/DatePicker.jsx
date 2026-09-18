@@ -28,11 +28,44 @@ function formatDisplay(iso) {
   return `${parts[1]}/${parts[2]}/${parts[0]}`
 }
 
-const INPUT_CLS = 'bg-[#161616] border border-[rgba(201,168,76,0.18)] text-[#F0EDE6] rounded-lg px-3 py-2 text-sm w-full cursor-pointer focus:outline-none focus:border-[rgba(201,168,76,0.6)] placeholder:text-[#888580] select-none'
+// Digits-only string → masked "MM/DD/YYYY", inserting slashes as the user types
+function maskDate(raw) {
+  const digits = raw.replace(/\D/g, '').slice(0, 8)
+  if (digits.length > 4) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+  if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  return digits
+}
+
+// Complete "MM/DD/YYYY" → "YYYY-MM-DD", or null if not a valid calendar date
+function parseTypedDate(text) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text)
+  if (!match) return null
+  const [, mm, dd, yyyy] = match
+  const month = Number(mm)
+  const day = Number(dd)
+  const year = Number(yyyy)
+  const date = new Date(year, month - 1, day)
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null
+  return toIso(date)
+}
+
+const INPUT_CLS = 'bg-[#161616] border border-[rgba(201,168,76,0.18)] text-[#F0EDE6] rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-[rgba(201,168,76,0.6)] placeholder:text-[#888580]'
 
 export function DatePicker({ value, onChange, placeholder = 'MM/DD/YYYY' }) {
   const [open, setOpen] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const [text, setText] = useState(formatDisplay(value))
+  const [month, setMonth] = useState(() => parseLocalDate(value))
   const ref = useRef(null)
+
+  useEffect(() => {
+    if (!focused) setText(formatDisplay(value))
+  }, [value, focused])
+
+  useEffect(() => {
+    const parsed = parseLocalDate(value)
+    if (parsed) setMonth(parsed)
+  }, [value])
 
   useEffect(() => {
     if (!open) return
@@ -57,15 +90,31 @@ export function DatePicker({ value, onChange, placeholder = 'MM/DD/YYYY' }) {
     if (date) setOpen(false)
   }
 
+  function handleTextChange(e) {
+    const masked = maskDate(e.target.value)
+    setText(masked)
+    const iso = parseTypedDate(masked)
+    if (iso) onChange(iso)
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' || e.key === 'Escape') {
+      e.currentTarget.blur()
+      setOpen(false)
+    }
+  }
+
   return (
     <div ref={ref} className="relative">
       <input
-        readOnly
-        value={formatDisplay(value)}
+        inputMode="numeric"
+        value={text}
         placeholder={placeholder}
-        onClick={() => setOpen(v => !v)}
+        onFocus={() => { setFocused(true); setOpen(true) }}
+        onBlur={() => setFocused(false)}
+        onChange={handleTextChange}
+        onKeyDown={handleKeyDown}
         className={INPUT_CLS}
-        onChange={() => {}}
       />
       {open && (
         <div className="absolute z-50 top-full mt-1 bg-[#1E1E1E] border border-[rgba(201,168,76,0.18)] rounded-xl shadow-2xl p-3 fleet-dp">
@@ -73,7 +122,8 @@ export function DatePicker({ value, onChange, placeholder = 'MM/DD/YYYY' }) {
             mode="single"
             selected={selected}
             onSelect={handleSelect}
-            defaultMonth={selected}
+            month={month}
+            onMonthChange={setMonth}
           />
         </div>
       )}
