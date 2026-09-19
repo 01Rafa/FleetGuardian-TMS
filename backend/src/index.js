@@ -24,21 +24,19 @@ import registrationRouter from './routes/registration.js'
 import { jwtAuth } from './middleware/auth.js'
 import { startNotificacionesCron } from './jobs/notificaciones.job.js'
 import { runSeed } from './seeds/runSeed.js'
+import { getAllowedOrigins, isOriginAllowed } from './lib/cors.js'
 
 const app = express()
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173')
-  .split(',')
-  .map(s => s.trim())
-  .filter(Boolean)
+const allowedOrigins = getAllowedOrigins()
+console.log(`[cors] allowed origins: ${allowedOrigins.join(', ')}`)
+if (process.env.NODE_ENV === 'production' && !process.env.ALLOWED_ORIGINS && !process.env.FRONTEND_URL) {
+  console.warn('[cors] ALLOWED_ORIGINS / FRONTEND_URL are not set: the production frontend will be blocked')
+}
 
+// A rejected origin gets no CORS headers, so the browser refuses to let that page read the response.
 app.use(cors({
-  origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
-      return callback(null, true)
-    }
-    return callback(new Error('Not allowed by CORS'))
-  },
+  origin: (origin, callback) => callback(null, isOriginAllowed(origin, allowedOrigins)),
   credentials: true,
 }))
 app.use(express.json())
