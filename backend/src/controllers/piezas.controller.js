@@ -21,14 +21,14 @@ const OWNER_INCLUDE = {
 export const createPieza = catchAsync(async (req, res) => {
   const camion = await prisma.camion.findFirst({ where: { id: req.params.id, empresaId: req.user.empresaId } })
   if (!camion) return res.status(404).json({ error: 'Camión not found' })
-  const pieza = await prisma.pieza.create({ data: { ...req.body, camionId: req.params.id } })
+  const pieza = await prisma.pieza.create({ data: { ...pickPiezaFields(req.body), camionId: req.params.id } })
   res.status(201).json(pieza)
 })
 
 export const createTrailerPieza = catchAsync(async (req, res) => {
   const trailer = await prisma.trailer.findFirst({ where: { id: req.params.id, empresaId: req.user.empresaId } })
   if (!trailer) return res.status(404).json({ error: 'Trailer not found' })
-  const pieza = await prisma.pieza.create({ data: { ...req.body, trailerId: req.params.id } })
+  const pieza = await prisma.pieza.create({ data: { ...pickPiezaFields(req.body), trailerId: req.params.id } })
   res.status(201).json(pieza)
 })
 
