@@ -1,6 +1,13 @@
 export function fmtDate(iso) {
   if (!iso) return '–'
-  return new Date(iso).toLocaleDateString('es', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  // Date-only values are stored as midnight UTC: format them in UTC so the calendar day never shifts with the viewer's zone.
+  return new Date(iso).toLocaleDateString('es', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' })
+}
+
+// English (m/d/yyyy) version of fmtDate, used by the driver pages.
+export function fmtDateUS(iso) {
+  if (!iso) return '–'
+  return new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC' })
 }
 
 export function toInputDate(iso) {

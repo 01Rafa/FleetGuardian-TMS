@@ -6,6 +6,7 @@ import { conductoresApi } from '../api/conductores.api'
 import { StatusBadge } from '../components/StatusBadge'
 import { getComplianceStatus, COMPLIANCE_FIELDS, computeNextDue } from '../utils/compliance'
 import { DatePicker } from '../components/DatePicker'
+import { fmtDateUS } from '../utils/format'
 
 const ESTADOS = ['activo', 'inactivo', 'vacaciones']
 
@@ -14,11 +15,6 @@ const ALL_DATE_KEYS = COMPLIANCE_FIELDS.map(f => f.key)
 function toInputDate(iso) {
   if (!iso) return ''
   return typeof iso === 'string' ? iso.slice(0, 10) : new Date(iso).toISOString().slice(0, 10)
-}
-
-function fmtDate(iso) {
-  if (!iso) return '–'
-  return new Date(iso).toLocaleDateString('en-US')
 }
 
 function DaysBadge({ nextDue }) {
@@ -254,7 +250,7 @@ export default function ConductorDetail() {
                   </label>
                   <DatePicker value={currentVal} onChange={v => setComplianceForm(f => ({ ...f, [compField.key]: v }))} />
                   {nextDue && (
-                    <p className="text-text-muted text-xs mt-0.5">Next due: {nextDue.toLocaleDateString('en-US')}</p>
+                    <p className="text-text-muted text-xs mt-0.5">Next due: {fmtDateUS(nextDue)}</p>
                   )}
                 </div>
               )
@@ -273,9 +269,9 @@ export default function ConductorDetail() {
                     {compField.type === 'interval' ? (
                       val ? (
                         <>
-                          <p className="text-text-muted text-xs">Last: {fmtDate(val)}</p>
+                          <p className="text-text-muted text-xs">Last: {fmtDateUS(val)}</p>
                           <div className="flex items-center gap-2 justify-end mt-0.5">
-                            <p className="text-text-primary text-sm">Next: {nextDue ? fmtDate(nextDue) : '–'}</p>
+                            <p className="text-text-primary text-sm">Next: {nextDue ? fmtDateUS(nextDue) : '–'}</p>
                             <DaysBadge nextDue={nextDue} />
                           </div>
                         </>
@@ -284,7 +280,7 @@ export default function ConductorDetail() {
                       )
                     ) : (
                       <div className="flex items-center gap-2 justify-end">
-                        <p className="text-text-primary text-sm">{val ? fmtDate(val) : '–'}</p>
+                        <p className="text-text-primary text-sm">{val ? fmtDateUS(val) : '–'}</p>
                         <DaysBadge nextDue={nextDue} />
                       </div>
                     )}

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DatePicker } from './DatePicker'
 import { DaysBadge } from './DaysBadge'
 import { computeNextDue } from '../utils/compliance'
-import { fmtDate, toInputDate } from '../utils/format'
+import { fmtDate, fmtDateUS, toInputDate } from '../utils/format'
 
 export function ComplianceSection({ entity, fields, onSave, readOnly = false }) {
   const [edit, setEdit] = useState(false)
@@ -69,7 +69,7 @@ export function ComplianceSection({ entity, fields, onSave, readOnly = false }) 
                 </label>
                 <DatePicker value={currentVal} onChange={v => setForm(f => ({ ...f, [compField.key]: v }))} />
                 {nextDue && (
-                  <p className="text-text-muted text-xs mt-0.5">Next due: {nextDue.toLocaleDateString('en-US')}</p>
+                  <p className="text-text-muted text-xs mt-0.5">Next due: {fmtDateUS(nextDue)}</p>
                 )}
               </div>
             )
