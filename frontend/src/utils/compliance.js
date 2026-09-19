@@ -19,12 +19,13 @@ export function computeNextDue(field, dateValue) {
   return field.type === 'expiry' ? date : new Date(date.getTime() + field.intervalMs)
 }
 
-export function getComplianceStatus(conductor) {
-  const now = Date.now()
-
-  const items = COMPLIANCE_FIELDS
+// Generic status for any entity (driver, truck, trailer) and its compliance field list.
+// Fields flagged reeferOnly only apply when entity.tipo === 'reefer'.
+export function computeComplianceStatus(entity, fields, now = Date.now()) {
+  const items = fields
+    .filter(field => !field.reeferOnly || entity.tipo === 'reefer')
     .map(field => {
-      const val = conductor[field.key]
+      const val = entity[field.key]
       if (!val) return null
       const nextDue = computeNextDue(field, val)
       if (!nextDue) return null
@@ -47,4 +48,8 @@ export function getComplianceStatus(conductor) {
   }
 
   return { status: 'green', closest: null }
+}
+
+export function getComplianceStatus(conductor) {
+  return computeComplianceStatus(conductor, COMPLIANCE_FIELDS)
 }

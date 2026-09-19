@@ -1,4 +1,4 @@
-import { computeNextDue } from './compliance.js'
+import { computeComplianceStatus } from './compliance.js'
 
 const YEAR_MS = 365 * 24 * 60 * 60 * 1000
 const TWO_YEAR_MS = 2 * YEAR_MS
@@ -19,27 +19,5 @@ export const TRUCK_COMPLIANCE_FIELDS = [
 ]
 
 export function getTruckComplianceStatus(camion) {
-  const now = Date.now()
-  const fields = TRUCK_COMPLIANCE_FIELDS.filter(f => !f.reeferOnly || camion.tipo === 'reefer')
-  const items = fields
-    .map(field => {
-      const val = camion[field.key]
-      if (!val) return null
-      const nextDue = computeNextDue(field, val)
-      if (!nextDue) return null
-      const daysLeft = Math.ceil((nextDue.getTime() - now) / 86400000)
-      return { ...field, nextDue, daysLeft }
-    })
-    .filter(Boolean)
-  const expired = items.filter(i => i.daysLeft < 0)
-  const expiringSoon = items.filter(i => i.daysLeft >= 0 && i.daysLeft <= 30)
-  if (expired.length > 0) {
-    const closest = expired.reduce((a, b) => b.daysLeft > a.daysLeft ? b : a)
-    return { status: 'red', closest }
-  }
-  if (expiringSoon.length > 0) {
-    const closest = expiringSoon.reduce((a, b) => a.daysLeft < b.daysLeft ? a : b)
-    return { status: 'yellow', closest }
-  }
-  return { status: 'green', closest: null }
+  return computeComplianceStatus(camion, TRUCK_COMPLIANCE_FIELDS)
 }
