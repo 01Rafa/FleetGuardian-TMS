@@ -23,7 +23,7 @@ function TipoIcon({ tipo }) {
       </svg>
     )
   }
-  if (tipo === 'compliance_truck') {
+  if (tipo === 'compliance_truck' || tipo === 'compliance_trailer') {
     return (
       <svg className="w-4 h-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
         <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
@@ -47,6 +47,8 @@ function NotifRow({ notif, onRead }) {
       navigate(`/conductores/${notif.entidadId}`)
     } else if (notif.entidadTipo === 'camion' && notif.entidadId) {
       navigate(`/flota/${notif.entidadId}`)
+    } else if (notif.entidadTipo === 'trailer' && notif.entidadId) {
+      navigate(`/flota/trailers/${notif.entidadId}`)
     }
   }
 

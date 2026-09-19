@@ -13,6 +13,7 @@ import VueltaDetail from './pages/VueltaDetail'
 import NuevaVueltaWizard from './components/NuevaVueltaWizard'
 import Flota from './pages/Flota'
 import Trailers from './pages/Trailers'
+import TrailerDetail from './pages/TrailerDetail'
 import CamionDetail from './pages/CamionDetail'
 import Conductores from './pages/Conductores'
 import ConductorDetail from './pages/ConductorDetail'
@@ -35,6 +36,7 @@ function AppRoutes() {
       <Route path="/vueltas/:id" element={<ProtectedRoute><Layout><VueltaDetail /></Layout></ProtectedRoute>} />
       <Route path="/flota" element={<ProtectedRoute><Layout><Flota /></Layout></ProtectedRoute>} />
       <Route path="/flota/trailers" element={<ProtectedRoute><Layout><Trailers /></Layout></ProtectedRoute>} />
+      <Route path="/flota/trailers/:id" element={<ProtectedRoute><Layout><TrailerDetail /></Layout></ProtectedRoute>} />
       <Route path="/flota/:id" element={<ProtectedRoute><Layout><CamionDetail /></Layout></ProtectedRoute>} />
       <Route path="/conductores" element={<ProtectedRoute><Layout><Conductores /></Layout></ProtectedRoute>} />
       <Route path="/conductores/:id" element={<ProtectedRoute><Layout><ConductorDetail /></Layout></ProtectedRoute>} />
