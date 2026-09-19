@@ -9,6 +9,7 @@ import { tonsToDisplay, displayToTons, formatWeight } from '../utils/weight'
 import { DatePicker } from '../components/DatePicker'
 import { TRAILER_COMPLIANCE_FIELDS, getTrailerComplianceStatus } from '../utils/trailerComplianceFields'
 import { fmtDate, toInputDate, FIELD_CLS } from '../utils/format'
+import { unitLabel, hasUnitNumber } from '../utils/unit'
 import { ComplianceSection } from '../components/ComplianceSection'
 import { PiezasSection } from '../components/PiezasSection'
 import { MantenimientosSection } from '../components/MantenimientosSection'
@@ -64,6 +65,7 @@ export default function TrailerDetail() {
   const startEditInfo = () => {
     setInfoForm({
       placa: trailer.placa,
+      numeroUnidad: trailer.numeroUnidad ?? '',
       modelo: trailer.modelo,
       tipo: trailer.tipo,
       estado: trailer.estado,
@@ -87,6 +89,7 @@ export default function TrailerDetail() {
     if (!infoForm.placa.trim() || !infoForm.modelo.trim()) return setInfoError('Placa y modelo son obligatorios')
     updateMutation.mutate({
       placa: infoForm.placa.trim().toUpperCase(),
+      numeroUnidad: infoForm.numeroUnidad.trim() || null,
       modelo: infoForm.modelo.trim(),
       tipo: infoForm.tipo,
       estado: infoForm.estado,
@@ -118,14 +121,14 @@ export default function TrailerDetail() {
       {/* Header */}
       <div className="bg-surface border border-border-dim rounded-xl p-5">
         <div className="flex items-center gap-3 mb-1">
-          <h2 className="font-serif text-3xl text-gold">{trailer.placa}</h2>
+          <h2 className="font-serif text-3xl text-gold">{unitLabel(trailer)}</h2>
           <StatusBadge estado={trailer.estado} />
           <span className={`flex items-center gap-1.5 text-sm font-medium ${complianceCls}`}>
             <span className={`w-2 h-2 rounded-full ${complianceDotCls}`} />
             {complianceLabel}
           </span>
         </div>
-        <p className="text-text-muted">{trailer.modelo}{trailer.anio ? ` (${trailer.anio})` : ''} · <span className="capitalize">{trailer.tipo?.replace('_', ' ')}</span></p>
+        <p className="text-text-muted">{hasUnitNumber(trailer) ? `Placa ${trailer.placa} · ` : ''}{trailer.modelo}{trailer.anio ? ` (${trailer.anio})` : ''} · <span className="capitalize">{trailer.tipo?.replace('_', ' ')}</span></p>
         {complianceClosest && (
           <p className={`text-xs mt-1 ${complianceCls}`}>
             {complianceClosest.daysLeft < 0
@@ -158,6 +161,10 @@ export default function TrailerDetail() {
 
         {editInfo ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">Número de unidad</label>
+              <input className={field} placeholder="T-104" maxLength={30} value={infoForm.numeroUnidad} onChange={e => setInfoForm(f => ({ ...f, numeroUnidad: e.target.value }))} />
+            </div>
             <div>
               <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">Placa *</label>
               <input className={field} value={infoForm.placa} onChange={e => setInfoForm(f => ({ ...f, placa: e.target.value }))} />

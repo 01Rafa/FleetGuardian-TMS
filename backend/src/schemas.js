@@ -3,6 +3,7 @@ import { z } from 'zod'
 const uuid = z.string().uuid()
 const optUuid = uuid.nullable().optional()
 const dateStr = z.string().nullable().optional()
+const unitNumber = z.string().trim().max(30).nullable().optional()
 const ESTADOS_VUELTA = ['planificada', 'en_curso', 'completada', 'facturada']
 const ROLES = ['admin', 'dispatcher', 'viewer']
 
@@ -155,6 +156,7 @@ const camionDateFields = z.object({
 
 export const createCamionSchema = camionDateFields.extend({
   placa: z.string().min(1),
+  numeroUnidad: unitNumber,
   modelo: z.string().min(1),
   tipo: z.string().min(1),
   anio: z.number().int().nullable().optional(),
@@ -167,6 +169,7 @@ export const createCamionSchema = camionDateFields.extend({
 
 export const updateCamionSchema = camionDateFields.extend({
   placa: z.string().min(1).optional(),
+  numeroUnidad: unitNumber,
   modelo: z.string().min(1).optional(),
   tipo: z.string().min(1).optional(),
   anio: z.number().int().nullable().optional(),
@@ -194,6 +197,7 @@ const trailerDateFields = z.object({
 
 export const createTrailerSchema = trailerDateFields.extend({
   placa: z.string().min(1),
+  numeroUnidad: unitNumber,
   modelo: z.string().min(1),
   tipo: z.enum(TIPOS_TRAILER),
   anio: z.number().int().nullable().optional(),
@@ -206,6 +210,7 @@ export const createTrailerSchema = trailerDateFields.extend({
 
 export const updateTrailerSchema = trailerDateFields.extend({
   placa: z.string().min(1).optional(),
+  numeroUnidad: unitNumber,
   modelo: z.string().min(1).optional(),
   tipo: z.enum(TIPOS_TRAILER).optional(),
   anio: z.number().int().nullable().optional(),

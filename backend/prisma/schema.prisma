@@ -42,6 +42,7 @@ model Camion {
   empresaId               String
   empresa                 Empresa         @relation(fields: [empresaId], references: [id])
   placa                   String
+  numeroUnidad            String?
   modelo                  String
   anio                    Int?
   capacidadTon            Float?
@@ -78,6 +79,7 @@ model Trailer {
   empresaId               String
   empresa                 Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
   placa                   String
+  numeroUnidad            String?
   tipo                    String
   modelo                  String
   anio                    Int?

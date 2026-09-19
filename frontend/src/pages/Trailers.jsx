@@ -9,11 +9,12 @@ import { getTrailerComplianceStatus } from '../utils/trailerComplianceFields'
 import { useRole } from '../hooks/useRole'
 import { useWeightUnit } from '../context/WeightUnitContext'
 import { displayToTons, formatWeight } from '../utils/weight'
+import { unitLabel, hasUnitNumber } from '../utils/unit'
 import { FIELD_CLS } from '../utils/format'
 
 const TIPOS = ['dry_van', 'reefer', 'flatbed', 'otro']
 const ESTADOS = ['disponible', 'en_ruta', 'mantenimiento']
-const EMPTY = { placa: '', modelo: '', anio: '', capacidad: '', tipo: 'dry_van', estado: 'disponible' }
+const EMPTY = { numeroUnidad: '', placa: '', modelo: '', anio: '', capacidad: '', tipo: 'dry_van', estado: 'disponible' }
 
 export default function Trailers() {
   const navigate = useNavigate()
@@ -58,6 +59,7 @@ export default function Trailers() {
     if (!form.placa.trim() || !form.modelo.trim()) return setError(t('fleet.validationRequired'))
     createMutation.mutate({
       placa: form.placa.trim().toUpperCase(),
+      ...(form.numeroUnidad.trim() ? { numeroUnidad: form.numeroUnidad.trim() } : {}),
       modelo: form.modelo.trim(),
       tipo: form.tipo,
       estado: form.estado,
@@ -89,6 +91,11 @@ export default function Trailers() {
           <h3 className="font-serif text-lg text-text-primary">{t('trailers.formTitle')}</h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('fleet.unitNumber')}</label>
+              <input className={field} placeholder="T-104" maxLength={30} value={form.numeroUnidad}
+                onChange={e => setForm(f => ({ ...f, numeroUnidad: e.target.value }))} />
+            </div>
             <div>
               <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('fleet.plate')} *</label>
               <input className={field} placeholder="TR-123" value={form.placa}
@@ -155,8 +162,8 @@ export default function Trailers() {
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-gold font-medium text-lg">{tr.placa}</p>
-                    <p className="text-text-muted text-sm">{tr.modelo} {tr.anio ? `(${tr.anio})` : ''}</p>
+                    <p className="text-gold font-medium text-lg">{unitLabel(tr)}</p>
+                    <p className="text-text-muted text-sm">{hasUnitNumber(tr) ? `${t('fleet.plate')} ${tr.placa} · ` : ''}{tr.modelo} {tr.anio ? `(${tr.anio})` : ''}</p>
                     {closest && (
                       <p className={`text-xs mt-0.5 ${alertCls}`}>
                         {closest.daysLeft < 0

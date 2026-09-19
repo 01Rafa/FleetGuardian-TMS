@@ -190,6 +190,7 @@
     "noTrucks": "No trucks registered",
     "formTitle": "New Truck",
     "plate": "Plate",
+    "unitNumber": "Unit number",
     "model": "Model",
     "type": "Type",
     "status": "Status",

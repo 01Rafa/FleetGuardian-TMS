@@ -190,6 +190,7 @@
     "noTrucks": "No hay camiones registrados",
     "formTitle": "Nuevo Camión",
     "plate": "Placa",
+    "unitNumber": "Número de unidad",
     "model": "Modelo",
     "type": "Tipo",
     "status": "Estado",
