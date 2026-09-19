@@ -32,7 +32,26 @@ const TRUCK_FIELDS = [
   { key: 'epaRefrigerantExpiry', label: 'EPA Refrigerant Cert', type: 'expiry', reeferOnly: true },
 ]
 
-function computeNextDue(field, value) {
+export const TRAILER_FIELDS = [
+  { key: 'dotInspectionLastDate', label: 'DOT Annual Inspection', type: 'interval', intervalMs: YEAR_MS },
+  { key: 'stateInspectionLastDate', label: 'State Inspection', type: 'interval', intervalMs: YEAR_MS },
+  { key: 'brakeInspectionLastDate', label: 'Brake Inspection', type: 'interval', intervalMs: YEAR_MS },
+  { key: 'registrationExpiry', label: 'Registration', type: 'expiry' },
+  { key: 'cargoInsuranceExpiry', label: 'Cargo Insurance', type: 'expiry' },
+  { key: 'epaRefrigerantExpiry', label: 'EPA Refrigerant Cert', type: 'expiry', reeferOnly: true },
+]
+
+const ENTIDAD_TIPO = {
+  compliance_driver: 'conductor',
+  compliance_truck: 'camion',
+  compliance_trailer: 'trailer',
+}
+
+export function entidadTipoFor(tipo) {
+  return ENTIDAD_TIPO[tipo] ?? 'camion'
+}
+
+export function computeNextDue(field, value) {
   if (!value) return null
   const date = new Date(value)
   if (isNaN(date.getTime())) return null
@@ -65,6 +84,14 @@ function buildTruckMessage(placa, field, daysLeft) {
   return `Truck ${placa} ${labelLower} ${verb} in ${pluralDays(daysLeft)}`
 }
 
+export function buildTrailerMessage(placa, field, daysLeft) {
+  const labelLower = field.label.toLowerCase()
+  if (daysLeft < 0) return `Trailer ${placa} ${labelLower} is ${pluralDays(Math.abs(daysLeft))} overdue`
+  if (daysLeft === 0) return `Trailer ${placa} ${labelLower} is due today`
+  const verb = field.type === 'expiry' ? 'expires' : 'is due'
+  return `Trailer ${placa} ${labelLower} ${verb} in ${pluralDays(daysLeft)}`
+}
+
 async function checkEntity(empresaId, entity, fields, tipo, buildMsg) {
   const now = Date.now()
   for (const field of fields) {
@@ -84,7 +111,7 @@ async function checkEntity(empresaId, entity, fields, tipo, buildMsg) {
     })
     if (existing) continue
 
-    const entidadTipo = tipo === 'compliance_driver' ? 'conductor' : 'camion'
+    const entidadTipo = entidadTipoFor(tipo)
     await prisma.notificacion.create({
       data: { empresaId, tipo, titulo, mensaje, entidadTipo, entidadId: entity.id },
     })
@@ -92,9 +119,10 @@ async function checkEntity(empresaId, entity, fields, tipo, buildMsg) {
 }
 
 async function runForEmpresa(empresaId) {
-  const [conductores, camiones] = await Promise.all([
+  const [conductores, camiones, trailers] = await Promise.all([
     prisma.conductor.findMany({ where: { empresaId } }),
     prisma.camion.findMany({ where: { empresaId } }),
+    prisma.trailer.findMany({ where: { empresaId } }),
   ])
 
   for (const conductor of conductores) {
@@ -108,6 +136,13 @@ async function runForEmpresa(empresaId) {
     await checkEntity(
       empresaId, camion, TRUCK_FIELDS, 'compliance_truck',
       (field, daysLeft) => buildTruckMessage(camion.placa, field, daysLeft)
+    )
+  }
+
+  for (const trailer of trailers) {
+    await checkEntity(
+      empresaId, trailer, TRAILER_FIELDS, 'compliance_trailer',
+      (field, daysLeft) => buildTrailerMessage(trailer.placa, field, daysLeft)
     )
   }
 }
