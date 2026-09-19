@@ -1,6 +1,8 @@
 -- Migration: 002_trailers
 -- Feature: Trailers (own entity, own maintenance and parts)
 -- Additive and idempotent: safe to run more than once, deletes no data.
+-- NOTE: Prisma `db push` does not create CHECK constraints. Apply this file to EVERY environment
+-- (dev, staging, production) or the exactly-one-owner CHECKs on Mantenimiento/Pieza will be missing.
 
 CREATE TABLE IF NOT EXISTS "Trailer" (
   "id"                      TEXT NOT NULL PRIMARY KEY,
