@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { DistanceUnitProvider } from './context/DistanceUnitContext'
+import { WeightUnitProvider } from './context/WeightUnitContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
 import Login from './pages/Login'
@@ -47,11 +48,13 @@ function AppRoutes() {
 export default function App() {
   return (
     <DistanceUnitProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </BrowserRouter>
+      <WeightUnitProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </BrowserRouter>
+      </WeightUnitProvider>
     </DistanceUnitProvider>
   )
 }

@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { camionesApi, mantenimientosApi, piezasApi } from '../api/camiones.api'
 import { StatusBadge } from '../components/StatusBadge'
 import { useDistanceUnit } from '../context/DistanceUnitContext'
+import { useWeightUnit } from '../context/WeightUnitContext'
+import { tonsToDisplay, displayToTons, formatWeight } from '../utils/weight'
 import { DatePicker } from '../components/DatePicker'
 import { TRUCK_COMPLIANCE_FIELDS, getTruckComplianceStatus } from '../utils/truckComplianceFields'
 import { computeNextDue } from '../utils/compliance'
@@ -58,6 +60,7 @@ const MANT_BADGE = {
 
 export default function CamionDetail() {
   const { unit } = useDistanceUnit()
+  const { weightUnit } = useWeightUnit()
   const { id } = useParams()
   const navigate = useNavigate()
   const qc = useQueryClient()
@@ -162,7 +165,7 @@ export default function CamionDetail() {
       tipo: camion.tipo,
       estado: camion.estado,
       anio: camion.anio ?? '',
-      capacidadTon: camion.capacidadTon ?? '',
+      capacidad: tonsToDisplay(camion.capacidadTon, weightUnit) ?? '',
       color: camion.color ?? '',
       vin: camion.vin ?? '',
       notas: camion.notas ?? '',
@@ -185,7 +188,7 @@ export default function CamionDetail() {
       tipo: infoForm.tipo,
       estado: infoForm.estado,
       anio: infoForm.anio ? parseInt(infoForm.anio) : null,
-      capacidadTon: infoForm.capacidadTon ? parseFloat(infoForm.capacidadTon) : null,
+      capacidadTon: infoForm.capacidad ? displayToTons(infoForm.capacidad, weightUnit) : null,
       color: infoForm.color.trim() || null,
       vin: infoForm.vin.trim() || null,
       notas: infoForm.notas.trim() || null,
@@ -340,9 +343,9 @@ export default function CamionDetail() {
                 onChange={e => setInfoForm(f => ({ ...f, anio: e.target.value }))} />
             </div>
             <div>
-              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">Capacidad (ton)</label>
-              <input className={field} type="number" step="0.1" min="0" value={infoForm.capacidadTon}
-                onChange={e => setInfoForm(f => ({ ...f, capacidadTon: e.target.value }))} />
+              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">Capacidad ({weightUnit})</label>
+              <input className={field} type="number" step={weightUnit === 'lb' ? '1' : '0.1'} min="0" value={infoForm.capacidad}
+                onChange={e => setInfoForm(f => ({ ...f, capacidad: e.target.value }))} />
             </div>
             <div>
               <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">Color</label>
@@ -366,7 +369,7 @@ export default function CamionDetail() {
             <div><p className="text-text-muted text-xs uppercase tracking-wide mb-0.5">Tipo</p><p className="text-text-primary capitalize">{camion.tipo?.replace('_', ' ')}</p></div>
             <div><p className="text-text-muted text-xs uppercase tracking-wide mb-0.5">Estado</p><StatusBadge estado={camion.estado} /></div>
             <div><p className="text-text-muted text-xs uppercase tracking-wide mb-0.5">Año</p><p className="text-text-primary">{camion.anio ?? '–'}</p></div>
-            <div><p className="text-text-muted text-xs uppercase tracking-wide mb-0.5">Capacidad</p><p className="text-text-primary">{camion.capacidadTon ? `${camion.capacidadTon} ton` : '–'}</p></div>
+            <div><p className="text-text-muted text-xs uppercase tracking-wide mb-0.5">Capacidad</p><p className="text-text-primary">{formatWeight(camion.capacidadTon, weightUnit)}</p></div>
             <div><p className="text-text-muted text-xs uppercase tracking-wide mb-0.5">Color</p><p className="text-text-primary">{camion.color ?? '–'}</p></div>
             <div><p className="text-text-muted text-xs uppercase tracking-wide mb-0.5">VIN</p><p className="text-text-primary font-mono text-xs break-all">{camion.vin ?? '–'}</p></div>
             {camion.notas && (

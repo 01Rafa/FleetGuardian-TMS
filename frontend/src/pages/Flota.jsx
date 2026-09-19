@@ -6,16 +6,19 @@ import { camionesApi } from '../api/camiones.api'
 import { StatusBadge } from '../components/StatusBadge'
 import { getTruckComplianceStatus } from '../utils/truckComplianceFields'
 import { useRole } from '../hooks/useRole'
+import { useWeightUnit } from '../context/WeightUnitContext'
+import { displayToTons, formatWeight } from '../utils/weight'
 
 const TIPOS = ['tractocamion', 'camion_rigido', 'otro']
 const ESTADOS = ['disponible', 'en_ruta', 'mantenimiento']
-const EMPTY = { placa: '', modelo: '', anio: '', capacidadTon: '', tipo: 'dry_van', estado: 'disponible' }
+const EMPTY = { placa: '', modelo: '', anio: '', capacidad: '', tipo: 'dry_van', estado: 'disponible' }
 
 export default function Flota() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { t } = useTranslation()
   const { isViewer } = useRole()
+  const { weightUnit } = useWeightUnit()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState(null)
@@ -57,7 +60,7 @@ export default function Flota() {
       tipo: form.tipo,
       estado: form.estado,
       ...(form.anio ? { anio: parseInt(form.anio) } : {}),
-      ...(form.capacidadTon ? { capacidadTon: parseFloat(form.capacidadTon) } : {}),
+      ...(form.capacidad ? { capacidadTon: displayToTons(form.capacidad, weightUnit) } : {}),
     })
   }
 
@@ -110,9 +113,9 @@ export default function Flota() {
                 onChange={e => setForm(f => ({ ...f, anio: e.target.value }))} />
             </div>
             <div>
-              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('fleet.capacity')}</label>
-              <input className={field} type="number" placeholder="30" step="0.1" min="0" value={form.capacidadTon}
-                onChange={e => setForm(f => ({ ...f, capacidadTon: e.target.value }))} />
+              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('fleet.capacity')} ({weightUnit})</label>
+              <input className={field} type="number" placeholder={weightUnit === 'lb' ? '60000' : '30'} step={weightUnit === 'lb' ? '1' : '0.1'} min="0" value={form.capacidad}
+                onChange={e => setForm(f => ({ ...f, capacidad: e.target.value }))} />
             </div>
           </div>
 
@@ -162,7 +165,7 @@ export default function Flota() {
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div><p className="text-text-muted">{t('fleet.type')}</p><p className="text-text-primary capitalize">{c.tipo}</p></div>
-                <div><p className="text-text-muted">{t('fleet.capacity')}</p><p className="text-text-primary">{c.capacidadTon ? `${c.capacidadTon} ton` : '–'}</p></div>
+                <div><p className="text-text-muted">{t('fleet.capacity')}</p><p className="text-text-primary">{formatWeight(c.capacidadTon, weightUnit)}</p></div>
               </div>
               <div className="flex justify-end pt-1" onClick={e => e.stopPropagation()}>
                 {confirmDeleteId === c.id ? (

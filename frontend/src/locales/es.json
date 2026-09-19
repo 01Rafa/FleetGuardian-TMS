@@ -178,7 +178,7 @@
     "type": "Tipo",
     "status": "Estado",
     "year": "Año",
-    "capacity": "Capacidad (ton)",
+    "capacity": "Capacidad",
     "errorSave": "Error al guardar",
     "errorDelete": "Error al eliminar",
     "docExpired": "Documento vencido",
@@ -253,6 +253,11 @@
       "title": "Unidades de distancia / Distance Units",
       "miles": "Miles",
       "km": "Kilómetros"
+    },
+    "weight": {
+      "title": "Unidades de peso / Weight Units",
+      "pounds": "Libras (lb)",
+      "tons": "Toneladas"
     }
   },
   "broker": {

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import i18n from '../i18n/index.js'
 import { useDistanceUnit } from '../context/DistanceUnitContext'
+import { useWeightUnit } from '../context/WeightUnitContext'
 import { useRole } from '../hooks/useRole'
 
 export default function Configuracion() {
@@ -9,6 +10,7 @@ export default function Configuracion() {
   const { isAdmin } = useRole()
   const currentLang = i18n.language?.startsWith('en') ? 'en' : 'es'
   const { unit, changeUnit } = useDistanceUnit()
+  const { weightUnit, changeWeightUnit } = useWeightUnit()
 
   const btnCls = (active) =>
     `px-5 py-2 rounded-lg text-sm font-medium border transition-colors ${
@@ -41,6 +43,18 @@ export default function Configuracion() {
           </button>
           <button className={btnCls(unit === 'km')} onClick={() => changeUnit('km')}>
             {t('settings.distance.km')}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-surface border border-border-dim rounded-xl p-5 space-y-4">
+        <h3 className="font-serif text-lg text-text-primary">{t('settings.weight.title')}</h3>
+        <div className="flex gap-3">
+          <button className={btnCls(weightUnit === 'lb')} onClick={() => changeWeightUnit('lb')}>
+            {t('settings.weight.pounds')}
+          </button>
+          <button className={btnCls(weightUnit === 'ton')} onClick={() => changeWeightUnit('ton')}>
+            {t('settings.weight.tons')}
           </button>
         </div>
       </div>
