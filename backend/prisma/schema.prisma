@@ -20,6 +20,7 @@ model Empresa {
   usuarios       Usuario[]
   brokers        Broker[]
   notificaciones Notificacion[]
+  trailers       Trailer[]
 }
 
 model Usuario {
@@ -72,10 +73,38 @@ model Camion {
   @@index([empresaId])
 }
 
+model Trailer {
+  id                      String          @id @default(uuid())
+  empresaId               String
+  empresa                 Empresa         @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  placa                   String
+  tipo                    String
+  modelo                  String
+  anio                    Int?
+  capacidadTon            Float?
+  estado                  String          @default("disponible")
+  vin                     String?
+  color                   String?
+  fechaCompra             DateTime?
+  notas                   String?
+  dotInspectionLastDate   DateTime?
+  stateInspectionLastDate DateTime?
+  brakeInspectionLastDate DateTime?
+  registrationExpiry      DateTime?
+  cargoInsuranceExpiry    DateTime?
+  epaRefrigerantExpiry    DateTime?
+  mantenimientos          Mantenimiento[]
+  piezas                  Pieza[]
+
+  @@index([empresaId])
+}
+
 model Mantenimiento {
   id                   String    @id @default(uuid())
-  camionId             String
-  camion               Camion    @relation(fields: [camionId], references: [id], onDelete: Cascade)
+  camionId             String?
+  camion               Camion?   @relation(fields: [camionId], references: [id], onDelete: Cascade)
+  trailerId            String?
+  trailer              Trailer?  @relation(fields: [trailerId], references: [id], onDelete: Cascade)
   tipo                 String
   descripcion          String
   costo                Float     @default(0)
@@ -83,12 +112,16 @@ model Mantenimiento {
   fecha                DateTime
   proximoMantenimiento DateTime?
   creadoEn             DateTime  @default(now())
+
+  @@index([trailerId])
 }
 
 model Pieza {
   id          String   @id @default(uuid())
-  camionId    String
-  camion      Camion   @relation(fields: [camionId], references: [id], onDelete: Cascade)
+  camionId    String?
+  camion      Camion?  @relation(fields: [camionId], references: [id], onDelete: Cascade)
+  trailerId   String?
+  trailer     Trailer? @relation(fields: [trailerId], references: [id], onDelete: Cascade)
   nombre      String
   numeroParte String?
   proveedor   String?
@@ -97,6 +130,8 @@ model Pieza {
   fecha       DateTime
   notas       String?
   creadoEn    DateTime @default(now())
+
+  @@index([trailerId])
 }
 
 model Conductor {
