@@ -166,7 +166,23 @@
     "cpm": "Costo por milla",
     "enterMilesManually": "Ingresa millas manualmente"
   },
+  "trailers": {
+    "newTrailer": "+ Nuevo Trailer",
+    "addTrailer": "Guardar Trailer",
+    "formTitle": "Nuevo Trailer",
+    "noTrailers": "No hay trailers registrados",
+    "types": {
+      "dry_van": "Dry van",
+      "reefer": "Reefer",
+      "flatbed": "Flatbed",
+      "otro": "Otro"
+    }
+  },
   "fleet": {
+    "tabs": {
+      "trucks": "Camiones",
+      "trailers": "Trailers"
+    },
     "title": "Flota",
     "newTruck": "+ Nuevo Camión",
     "addTruck": "Guardar Camión",
