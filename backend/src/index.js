@@ -8,6 +8,7 @@ import vueltasRouter from './routes/vueltas.js'
 import tramosRouter from './routes/tramos.js'
 import gastosRouter from './routes/gastos.js'
 import camionesRouter from './routes/camiones.js'
+import trailersRouter from './routes/trailers.js'
 import conductoresRouter from './routes/conductores.js'
 import dashboardRouter from './routes/dashboard.js'
 import sugerenciasRouter from './routes/sugerencias.js'
@@ -56,6 +57,7 @@ app.use('/api/vueltas', vueltasRouter)
 app.use('/api/tramos', tramosRouter)
 app.use('/api/gastos', gastosRouter)
 app.use('/api/camiones', camionesRouter)
+app.use('/api/trailers', trailersRouter)
 app.use('/api/conductores', conductoresRouter)
 app.use('/api/dashboard', dashboardRouter)
 app.use('/api/sugerencias', sugerenciasRouter)
