@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { extractJsonFromDocument } from './geminiExtract.js'
 
 const PROMPT = `You are a data extraction assistant for a trucking management system. Extract fields from this rate confirmation document and return ONLY a valid JSON object with no markdown, no backticks, no explanation.
 If a field is not found, use null.
@@ -75,52 +75,11 @@ Return this exact JSON structure:
   "specialInstructions": "string or null"
 }`
 
-function is503(err) {
-  return (
-    err?.status === 503 ||
-    err?.httpError?.status === 503 ||
-    String(err?.message ?? '').includes('503') ||
-    String(err?.message ?? '').toLowerCase().includes('service unavailable') ||
-    String(err?.message ?? '').toLowerCase().includes('overloaded')
-  )
-}
-
-async function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
 export async function extractRateConfirmation(fileBuffer, mimeType) {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-  const base64 = fileBuffer.toString('base64')
-
-  const delays = [2000, 4000, 8000]
-  let lastError
-
-  for (let attempt = 0; attempt <= delays.length; attempt++) {
-    try {
-      const result = await model.generateContent([
-        { inlineData: { data: base64, mimeType } },
-        PROMPT,
-      ])
-
-      const text = result.response.text().trim()
-      const clean = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
-
-      try {
-        return JSON.parse(clean)
-      } catch {
-        throw new Error('No se pudo leer el rate confirmation')
-      }
-    } catch (err) {
-      lastError = err
-      if (!is503(err) || attempt === delays.length) break
-      await sleep(delays[attempt])
-    }
-  }
-
-  if (is503(lastError)) {
-    throw new Error('El servicio de extracción está ocupado. Intenta de nuevo en unos segundos.')
-  }
-  throw lastError
+  return extractJsonFromDocument({
+    buffer: fileBuffer,
+    mimeType,
+    prompt: PROMPT,
+    parseError: 'No se pudo leer el rate confirmation',
+  })
 }

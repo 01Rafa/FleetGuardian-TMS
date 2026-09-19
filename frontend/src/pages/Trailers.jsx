@@ -10,11 +10,14 @@ import { useRole } from '../hooks/useRole'
 import { useWeightUnit } from '../context/WeightUnitContext'
 import { displayToTons, formatWeight } from '../utils/weight'
 import { unitLabel, hasUnitNumber } from '../utils/unit'
+import { DatePicker } from '../components/DatePicker'
+import { RegistrationUpload } from '../components/RegistrationUpload'
+import { applyRegistration } from '../utils/registration'
 import { FIELD_CLS } from '../utils/format'
 
 const TIPOS = ['dry_van', 'reefer', 'flatbed', 'otro']
 const ESTADOS = ['disponible', 'en_ruta', 'mantenimiento']
-const EMPTY = { numeroUnidad: '', placa: '', modelo: '', anio: '', capacidad: '', tipo: 'dry_van', estado: 'disponible' }
+const EMPTY = { numeroUnidad: '', vin: '', color: '', registrationExpiry: '', placa: '', modelo: '', anio: '', capacidad: '', tipo: 'dry_van', estado: 'disponible' }
 
 export default function Trailers() {
   const navigate = useNavigate()
@@ -60,6 +63,9 @@ export default function Trailers() {
     createMutation.mutate({
       placa: form.placa.trim().toUpperCase(),
       ...(form.numeroUnidad.trim() ? { numeroUnidad: form.numeroUnidad.trim() } : {}),
+      ...(form.vin.trim() ? { vin: form.vin.trim().toUpperCase() } : {}),
+      ...(form.color.trim() ? { color: form.color.trim() } : {}),
+      ...(form.registrationExpiry ? { registrationExpiry: new Date(form.registrationExpiry).toISOString() } : {}),
       modelo: form.modelo.trim(),
       tipo: form.tipo,
       estado: form.estado,
@@ -89,6 +95,8 @@ export default function Trailers() {
       {showForm && !isViewer && (
         <form onSubmit={handleSubmit} className="bg-surface border border-border-dim rounded-xl p-5 space-y-4">
           <h3 className="font-serif text-lg text-text-primary">{t('trailers.formTitle')}</h3>
+
+          <RegistrationUpload onExtracted={(d) => setForm(f => applyRegistration(f, d).form)} />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -127,6 +135,20 @@ export default function Trailers() {
               <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('fleet.capacity')} ({weightUnit})</label>
               <input className={field} type="number" placeholder={weightUnit === 'lb' ? '45000' : '22.5'} step={weightUnit === 'lb' ? '1' : '0.1'} min="0" value={form.capacidad}
                 onChange={e => setForm(f => ({ ...f, capacidad: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('registration.fields.vin')}</label>
+              <input className={field} placeholder="1FUJA6CV5CDBK1234" maxLength={17} value={form.vin}
+                onChange={e => setForm(f => ({ ...f, vin: e.target.value.toUpperCase() }))} />
+            </div>
+            <div>
+              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('registration.fields.color')}</label>
+              <input className={field} value={form.color}
+                onChange={e => setForm(f => ({ ...f, color: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('registration.fields.registrationExpiry')}</label>
+              <DatePicker value={form.registrationExpiry} onChange={v => setForm(f => ({ ...f, registrationExpiry: v }))} />
             </div>
           </div>
 

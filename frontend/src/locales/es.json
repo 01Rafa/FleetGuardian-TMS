@@ -279,5 +279,24 @@
   },
   "broker": {
     "create": "Crear broker: \"{{name}}\""
+  },
+  "registration": {
+    "upload": "Subir registración",
+    "reading": "Leyendo documento…",
+    "hint": "PDF o imagen, hasta 10 MB. Rellena los campos de abajo para que los revises.",
+    "filled": "Leído del documento",
+    "missing": "No encontrado en el documento",
+    "review": "Revisa los valores antes de guardar.",
+    "nothingFound": "No se pudo leer nada de este documento. Prueba con una foto más clara o escribe los datos a mano.",
+    "error": "No se pudo leer el documento",
+    "tooBig": "El archivo pesa más de 10 MB",
+    "fields": {
+      "placa": "Placa",
+      "vin": "VIN",
+      "anio": "Año",
+      "modelo": "Modelo",
+      "color": "Color",
+      "registrationExpiry": "Vencimiento del registro"
+    }
   }
 }

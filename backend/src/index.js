@@ -20,6 +20,7 @@ import usuariosRouter from './routes/usuarios.js'
 import routingRouter from './routes/routing.js'
 import adminRouter from './routes/admin.js'
 import rateconRouter from './routes/ratecon.js'
+import registrationRouter from './routes/registration.js'
 import { jwtAuth } from './middleware/auth.js'
 import { startNotificacionesCron } from './jobs/notificaciones.job.js'
 import { runSeed } from './seeds/runSeed.js'
@@ -69,6 +70,7 @@ app.use('/api/usuarios', usuariosRouter)
 app.use('/api/routing', routingRouter)
 app.use('/api/admin', adminRouter)
 app.use('/api/ratecon', rateconRouter)
+app.use('/api/registration', registrationRouter)
 
 app.use(errorHandler)
 

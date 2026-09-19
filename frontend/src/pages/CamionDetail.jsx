@@ -10,6 +10,8 @@ import { DatePicker } from '../components/DatePicker'
 import { TRUCK_COMPLIANCE_FIELDS, getTruckComplianceStatus } from '../utils/truckComplianceFields'
 import { fmtDate, toInputDate, FIELD_CLS } from '../utils/format'
 import { unitLabel, hasUnitNumber } from '../utils/unit'
+import { RegistrationUpload } from '../components/RegistrationUpload'
+import { applyRegistration } from '../utils/registration'
 import { ComplianceSection } from '../components/ComplianceSection'
 import { PiezasSection } from '../components/PiezasSection'
 import { MantenimientosSection } from '../components/MantenimientosSection'
@@ -73,6 +75,7 @@ export default function CamionDetail() {
       capacidad: tonsToDisplay(camion.capacidadTon, weightUnit) ?? '',
       color: camion.color ?? '',
       vin: camion.vin ?? '',
+      registrationExpiry: toInputDate(camion.registrationExpiry),
       notas: camion.notas ?? '',
     })
     setEditInfo(true)
@@ -97,6 +100,7 @@ export default function CamionDetail() {
       capacidadTon: infoForm.capacidad ? displayToTons(infoForm.capacidad, weightUnit) : null,
       color: infoForm.color.trim() || null,
       vin: infoForm.vin.trim() || null,
+      registrationExpiry: infoForm.registrationExpiry ? new Date(infoForm.registrationExpiry).toISOString() : null,
       notas: infoForm.notas.trim() || null,
     })
   }
@@ -167,6 +171,9 @@ export default function CamionDetail() {
 
         {editInfo ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <RegistrationUpload onExtracted={(d) => setInfoForm(f => applyRegistration(f, d).form)} />
+            </div>
             <div>
               <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">Número de unidad</label>
               <input className={field} placeholder="T-104" maxLength={30} value={infoForm.numeroUnidad} onChange={e => setInfoForm(f => ({ ...f, numeroUnidad: e.target.value }))} />
@@ -210,6 +217,10 @@ export default function CamionDetail() {
               <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">VIN</label>
               <input className={field} placeholder="1HGBH41JXMN109186" value={infoForm.vin}
                 onChange={e => setInfoForm(f => ({ ...f, vin: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">Vencimiento del registro</label>
+              <DatePicker value={infoForm.registrationExpiry} onChange={v => setInfoForm(f => ({ ...f, registrationExpiry: v }))} />
             </div>
             <div className="md:col-span-2">
               <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">Notas</label>
