@@ -122,7 +122,8 @@ Existing `PUT|DELETE /api/mantenimientos/:id` and `/api/piezas/:id` are reused f
 To avoid copying ~700 lines, the sections that are identical for both owners are extracted and used by both pages:
 
 - `MantenimientosSection` and `PiezasSection` (including "upcoming maintenance"): props for the owner id, the list, the create/update/delete functions, the React Query key to invalidate, and `readOnly`.
-- A generic compliance status helper: `getComplianceStatus(entity, fields)` in `utils/compliance.js` (next to `computeNextDue`); `getTruckComplianceStatus` becomes a thin wrapper (unchanged behavior) and `getTrailerComplianceStatus` is added with `utils/trailerComplianceFields.js`.
+- A generic `computeComplianceStatus(entity, fields, now)` in `utils/compliance.js` (next to `computeNextDue`); `getComplianceStatus(conductor)` and `getTruckComplianceStatus` become thin wrappers with unchanged behavior, and `getTrailerComplianceStatus` is added with `utils/trailerComplianceFields.js`.
+- ComplianceSection (view + edit of the compliance list) is shared as well, alongside MantenimientosSection and PiezasSection.
 - General info and documents forms stay per-entity (fields differ).
 
 This is the only step that touches working truck code, so `CamionDetail` maintenance and parts must be re-verified (see Testing).
