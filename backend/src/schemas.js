@@ -177,6 +177,45 @@ export const updateCamionSchema = camionDateFields.extend({
   notas: z.string().nullable().optional(),
 })
 
+// ── Trailer ───────────────────────────────────────────────────────────────────
+
+export const TIPOS_TRAILER = ['dry_van', 'reefer', 'flatbed', 'otro']
+export const ESTADOS_TRAILER = ['disponible', 'en_ruta', 'mantenimiento']
+
+const trailerDateFields = z.object({
+  fechaCompra: dateStr,
+  dotInspectionLastDate: dateStr,
+  stateInspectionLastDate: dateStr,
+  brakeInspectionLastDate: dateStr,
+  registrationExpiry: dateStr,
+  cargoInsuranceExpiry: dateStr,
+  epaRefrigerantExpiry: dateStr,
+})
+
+export const createTrailerSchema = trailerDateFields.extend({
+  placa: z.string().min(1),
+  modelo: z.string().min(1),
+  tipo: z.enum(TIPOS_TRAILER),
+  anio: z.number().int().nullable().optional(),
+  capacidadTon: z.number().nullable().optional(),
+  estado: z.enum(ESTADOS_TRAILER).optional(),
+  vin: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
+  notas: z.string().nullable().optional(),
+})
+
+export const updateTrailerSchema = trailerDateFields.extend({
+  placa: z.string().min(1).optional(),
+  modelo: z.string().min(1).optional(),
+  tipo: z.enum(TIPOS_TRAILER).optional(),
+  anio: z.number().int().nullable().optional(),
+  capacidadTon: z.number().nullable().optional(),
+  estado: z.enum(ESTADOS_TRAILER).optional(),
+  vin: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
+  notas: z.string().nullable().optional(),
+})
+
 // ── Mantenimiento ─────────────────────────────────────────────────────────────
 
 export const createMantenimientoSchema = z.object({
