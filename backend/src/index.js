@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
+import helmet from 'helmet'
 import { errorHandler } from './middleware/errorHandler.js'
 import authRouter from './routes/auth.js'
 import vueltasRouter from './routes/vueltas.js'
@@ -30,6 +31,12 @@ import { validateEnv } from './lib/env.js'
 validateEnv()
 
 const app = express()
+
+// Railway puts one proxy in front of the app. Without this every client shares the proxy IP,
+// so the rate limiter would lock everybody out at once.
+app.set('trust proxy', 1)
+// The API is called from another origin (Vercel), so responses must stay readable cross-origin.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 
 const allowedOrigins = getAllowedOrigins()
 console.log(`[cors] allowed origins: ${allowedOrigins.join(', ')}`)
