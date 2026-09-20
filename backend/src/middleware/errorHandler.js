@@ -16,7 +16,10 @@ export function errorHandler(err, req, res, next) {
     return res.status(status).json({ error: message })
   }
   const status = err.status ?? 500
-  const message = err.message ?? 'Internal server error'
-  if (status === 500) console.error(err)
-  res.status(status).json({ error: message })
+  // Internal messages (SQL, hosts, keys) stay in the server log; only client errors show theirs.
+  if (status >= 500) {
+    console.error(err)
+    return res.status(status).json({ error: 'Internal server error' })
+  }
+  res.status(status).json({ error: err.message ?? 'Request error' })
 }

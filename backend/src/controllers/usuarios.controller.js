@@ -1,8 +1,9 @@
 import bcrypt from 'bcryptjs'
 import prisma from '../lib/prisma.js'
 import { catchAsync } from '../middleware/errorHandler.js'
+import { generateTempPassword } from '../lib/tempPassword.js'
+import { normalizeEmail } from '../lib/email.js'
 
-const TEMP_PASSWORD = 'Welcome2025!'
 const VALID_ROLES = ['admin', 'dispatcher', 'viewer']
 
 const userShape = u => ({ id: u.id, nombre: u.nombre, email: u.email, rol: u.rol, creadoEn: u.creadoEn })
@@ -25,16 +26,19 @@ export const inviteUsuario = catchAsync(async (req, res) => {
   if (!email?.trim()) return res.status(400).json({ error: 'Email is required' })
   if (!VALID_ROLES.includes(rol)) return res.status(400).json({ error: 'Invalid role' })
 
-  const existing = await prisma.usuario.findUnique({ where: { email: email.toLowerCase() } })
+  const normalized = normalizeEmail(email)
+  const existing = await prisma.usuario.findUnique({ where: { email: normalized } })
   if (existing) return res.status(409).json({ error: 'Email already in use' })
 
-  const hashed = await bcrypt.hash(TEMP_PASSWORD, 10)
+  // Shown once to the inviter; only the hash is stored. The user must change it at first login.
+  const tempPassword = generateTempPassword()
+  const hashed = await bcrypt.hash(tempPassword, 10)
   const user = await prisma.usuario.create({
-    data: { empresaId, nombre: nombre.trim(), email: email.trim().toLowerCase(), password: hashed, rol, mustChangePassword: true },
+    data: { empresaId, nombre: nombre.trim(), email: normalized, password: hashed, rol, mustChangePassword: true },
     select: { id: true, nombre: true, email: true, rol: true, creadoEn: true },
   })
 
-  res.status(201).json({ ...userShape(user), tempPassword: TEMP_PASSWORD })
+  res.status(201).json({ ...userShape(user), tempPassword })
 })
 
 export const updateRol = catchAsync(async (req, res) => {

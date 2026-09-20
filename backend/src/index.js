@@ -25,6 +25,9 @@ import { jwtAuth } from './middleware/auth.js'
 import { startNotificacionesCron } from './jobs/notificaciones.job.js'
 import { runSeed } from './seeds/runSeed.js'
 import { getAllowedOrigins, isOriginAllowed } from './lib/cors.js'
+import { validateEnv } from './lib/env.js'
+
+validateEnv()
 
 const app = express()
 

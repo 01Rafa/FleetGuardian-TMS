@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import prisma from '../lib/prisma.js'
 import { signAccess, signRefresh, verifyRefresh } from '../lib/jwt.js'
 import { catchAsync } from '../middleware/errorHandler.js'
+import { normalizeEmail } from '../lib/email.js'
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -17,7 +18,7 @@ function userShape(u) {
 export const login = catchAsync(async (req, res) => {
   const { email, password } = req.body
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' })
-  const user = await prisma.usuario.findUnique({ where: { email }, select: { id: true, nombre: true, email: true, rol: true, empresaId: true, password: true, mustChangePassword: true } })
+  const user = await prisma.usuario.findUnique({ where: { email: normalizeEmail(email) }, select: { id: true, nombre: true, email: true, rol: true, empresaId: true, password: true, mustChangePassword: true } })
   if (!user) return res.status(401).json({ error: 'Invalid credentials' })
 
   const valid = await bcrypt.compare(password, user.password)
@@ -41,7 +42,7 @@ export const register = catchAsync(async (req, res) => {
   if (usuarioData.password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' })
   if (usuarioData.password !== usuarioData.confirmPassword) return res.status(400).json({ error: 'Passwords do not match' })
 
-  const existing = await prisma.usuario.findUnique({ where: { email: usuarioData.email } })
+  const existing = await prisma.usuario.findUnique({ where: { email: normalizeEmail(usuarioData.email) } })
   if (existing) return res.status(409).json({ error: 'Email already in use' })
 
   const hashed = await bcrypt.hash(usuarioData.password, 10)
@@ -58,7 +59,7 @@ export const register = catchAsync(async (req, res) => {
       data: {
         empresaId: empresa.id,
         nombre: usuarioData.nombre.trim(),
-        email: usuarioData.email.trim().toLowerCase(),
+        email: normalizeEmail(usuarioData.email),
         password: hashed,
         rol: 'admin',
       },
