@@ -3,6 +3,7 @@ import prisma from '../lib/prisma.js'
 import { catchAsync } from '../middleware/errorHandler.js'
 import { generateTempPassword } from '../lib/tempPassword.js'
 import { normalizeEmail } from '../lib/email.js'
+import { sessions } from '../lib/sessions.js'
 
 const VALID_ROLES = ['admin', 'dispatcher', 'viewer']
 
@@ -70,6 +71,7 @@ export const resetPassword = catchAsync(async (req, res) => {
   const tempPassword = generateTempPassword()
   const hashed = await bcrypt.hash(tempPassword, 10)
   await prisma.usuario.update({ where: { id: user.id }, data: { password: hashed, mustChangePassword: true } })
+  await sessions.endAll(user.id)
 
   res.json({ ...userShape(user), tempPassword })
 })
