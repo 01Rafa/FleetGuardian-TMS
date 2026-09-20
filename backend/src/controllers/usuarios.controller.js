@@ -58,7 +58,23 @@ export const updateRol = catchAsync(async (req, res) => {
   res.json(userShape(updated))
 })
 
-export const deleteUsuario = catchAsync(async (req, res) => {
+// For a teammate who is locked out: the admin sets a new one-time password and shares it.
+export const resetPassword = catchAsync(async (req, res) => {
+  const { empresaId, userId } = req.user
+
+  if (req.params.id === userId) return res.status(400).json({ error: 'Use change password to update your own password' })
+
+  const user = await prisma.usuario.findFirst({ where: { id: req.params.id, empresaId } })
+  if (!user) return res.status(404).json({ error: 'User not found' })
+
+  const tempPassword = generateTempPassword()
+  const hashed = await bcrypt.hash(tempPassword, 10)
+  await prisma.usuario.update({ where: { id: user.id }, data: { password: hashed, mustChangePassword: true } })
+
+  res.json({ ...userShape(user), tempPassword })
+})
+
+export const deleteUsuario =catchAsync(async (req, res) => {
   const { empresaId, userId } = req.user
 
   if (req.params.id === userId) return res.status(400).json({ error: 'Cannot delete yourself' })

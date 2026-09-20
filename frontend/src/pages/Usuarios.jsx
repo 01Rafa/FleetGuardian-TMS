@@ -19,6 +19,84 @@ function RoleBadge({ rol }) {
   )
 }
 
+// Shown once after inviting or resetting: the server never returns this password again.
+function TempPasswordView({ title, user, onClose }) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    navigator.clipboard.writeText(user.tempPassword)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <span className="text-success text-lg">✓</span>
+        <h3 className="font-serif text-lg text-text-primary">{title}</h3>
+      </div>
+      <p className="text-text-muted text-sm">
+        Share the temporary password with <strong className="text-text-primary">{user.nombre}</strong>. They will be asked to change it at their next login. It will not be shown again.
+      </p>
+      <div>
+        <p className="block text-text-muted text-xs font-medium uppercase tracking-wide mb-1.5">Temporary password</p>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 bg-surface-2 border border-border-dim rounded-lg px-3 py-2 text-gold text-sm font-mono select-all">
+            {user.tempPassword}
+          </code>
+          <button
+            onClick={handleCopy}
+            className="px-3 py-2 bg-gold/10 border border-gold/30 text-gold text-xs font-medium rounded-lg hover:bg-gold/20 transition-colors whitespace-nowrap"
+          >
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+      </div>
+      <button
+        onClick={onClose}
+        className="w-full bg-gold text-bg-deep font-semibold py-2.5 rounded-lg hover:bg-gold/90 transition-colors text-sm"
+      >
+        Done
+      </button>
+    </div>
+  )
+}
+
+function ResetPasswordModal({ user, onClose }) {
+  const [error, setError] = useState('')
+  const [result, setResult] = useState(null)
+
+  const mutation = useMutation({
+    mutationFn: () => usuariosApi.resetPassword(user.id),
+    onSuccess: setResult,
+    onError: (err) => setError(err.response?.data?.error ?? 'Failed to reset password'),
+  })
+
+  if (result) return <TempPasswordView title="Password reset" user={result} onClose={onClose} />
+
+  return (
+    <div className="space-y-4">
+      <h3 className="font-serif text-lg text-text-primary">Reset password?</h3>
+      <p className="text-text-muted text-sm">
+        This replaces the password of <strong className="text-text-primary">{user.nombre}</strong> with a new temporary one. Their current password will stop working.
+      </p>
+      {error && <p className="text-danger text-sm">{error}</p>}
+      <div className="flex gap-3">
+        <button onClick={onClose} className="flex-1 py-2 rounded-lg border border-border-dim text-text-muted hover:text-text-primary text-sm transition-colors">
+          Cancel
+        </button>
+        <button
+          onClick={() => { setError(''); mutation.mutate() }}
+          disabled={mutation.isPending}
+          className="flex-1 py-2 rounded-lg bg-gold text-bg-deep font-semibold text-sm hover:bg-gold/90 transition-colors disabled:opacity-50"
+        >
+          {mutation.isPending ? 'Resetting…' : 'Reset password'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function InviteModal({ onClose }) {
   const qc = useQueryClient()
   const [nombre, setNombre] = useState('')
@@ -26,7 +104,6 @@ function InviteModal({ onClose }) {
   const [rol, setRol] = useState('dispatcher')
   const [error, setError] = useState('')
   const [created, setCreated] = useState(null)
-  const [copied, setCopied] = useState(false)
 
   const mutation = useMutation({
     mutationFn: usuariosApi.invite,
@@ -37,47 +114,11 @@ function InviteModal({ onClose }) {
     onError: (err) => setError(err.response?.data?.error ?? 'Failed to create user'),
   })
 
-  function handleCopy() {
-    navigator.clipboard.writeText(created.tempPassword)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   const inputCls = 'w-full bg-surface-2 border border-border-dim rounded-lg px-3 py-2 text-text-primary text-sm focus:outline-none focus:border-gold transition-colors'
   const labelCls = 'block text-text-muted text-xs font-medium uppercase tracking-wide mb-1.5'
 
   if (created) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <span className="text-success text-lg">✓</span>
-          <h3 className="font-serif text-lg text-text-primary">User created</h3>
-        </div>
-        <p className="text-text-muted text-sm">
-          Share the temporary password with <strong className="text-text-primary">{created.nombre}</strong>. They should change it after first login.
-        </p>
-        <div>
-          <p className={labelCls}>Temporary password</p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 bg-surface-2 border border-border-dim rounded-lg px-3 py-2 text-gold text-sm font-mono select-all">
-              {created.tempPassword}
-            </code>
-            <button
-              onClick={handleCopy}
-              className="px-3 py-2 bg-gold/10 border border-gold/30 text-gold text-xs font-medium rounded-lg hover:bg-gold/20 transition-colors whitespace-nowrap"
-            >
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="w-full bg-gold text-bg-deep font-semibold py-2.5 rounded-lg hover:bg-gold/90 transition-colors text-sm"
-        >
-          Done
-        </button>
-      </div>
-    )
+    return <TempPasswordView title="User created" user={created} onClose={onClose} />
   }
 
   return (
@@ -176,7 +217,7 @@ function Modal({ children, onClose }) {
 export default function Usuarios() {
   const { user: me } = useAuth()
   const qc = useQueryClient()
-  const [modal, setModal] = useState(null) // null | 'invite' | { type: 'editRole', user } | { type: 'delete', user }
+  const [modal, setModal] = useState(null) // null | 'invite' | { type: 'editRole' | 'resetPassword' | 'delete', user }
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['usuarios'],
@@ -248,12 +289,20 @@ export default function Usuarios() {
                         Edit role
                       </button>
                       {u.id !== me?.id && (
-                        <button
-                          onClick={() => setModal({ type: 'delete', user: u })}
-                          className="text-xs text-text-muted hover:text-danger transition-colors px-2 py-1 rounded hover:bg-danger/5"
-                        >
-                          Delete
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setModal({ type: 'resetPassword', user: u })}
+                            className="text-xs text-text-muted hover:text-gold transition-colors px-2 py-1 rounded hover:bg-gold/5"
+                          >
+                            Reset password
+                          </button>
+                          <button
+                            onClick={() => setModal({ type: 'delete', user: u })}
+                            className="text-xs text-text-muted hover:text-danger transition-colors px-2 py-1 rounded hover:bg-danger/5"
+                          >
+                            Delete
+                          </button>
+                        </>
                       )}
                     </div>
                   </td>
@@ -273,6 +322,11 @@ export default function Usuarios() {
       {modal?.type === 'editRole' && (
         <Modal onClose={() => setModal(null)}>
           <EditRoleModal user={modal.user} onClose={() => setModal(null)} />
+        </Modal>
+      )}
+      {modal?.type === 'resetPassword' && (
+        <Modal onClose={() => setModal(null)}>
+          <ResetPasswordModal user={modal.user} onClose={() => setModal(null)} />
         </Modal>
       )}
       {modal?.type === 'delete' && (
