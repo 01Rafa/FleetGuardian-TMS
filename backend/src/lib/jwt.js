@@ -4,8 +4,8 @@ export function signAccess(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '15m' })
 }
 
-export function signRefresh(payload) {
-  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' })
+export function signRefresh(payload, sid) {
+  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d', ...(sid ? { jwtid: sid } : {}) })
 }
 
 export function verifyAccess(token) {
