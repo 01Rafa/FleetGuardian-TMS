@@ -33,8 +33,20 @@ model Usuario {
   rol                String   @default("dispatcher")
   mustChangePassword Boolean  @default(false)
   creadoEn           DateTime @default(now())
+  sesiones           Sesion[]
 
   @@index([empresaId])
+}
+
+model Sesion {
+  id        String    @id
+  usuarioId String
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  rotatedAt DateTime?
+  creadoEn  DateTime  @default(now())
+
+  @@index([usuarioId])
 }
 
 model Camion {
