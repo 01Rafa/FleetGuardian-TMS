@@ -3,6 +3,8 @@
 Date: 2026-09-20
 Status: approved in chat, spec pending review
 
+> **Revised 2026-09-20:** sessions are now server-side (`Sesion` table and `sessions` service, see `2026-09-20-sessions-and-login-limits-design.md`, already in production). `Usuario.passwordChangedAt`, `isRefreshRevoked` and the refresh check described below are NOT built. Confirming a reset calls `sessions.endAll(usuarioId)` after changing the password, and `changePassword` and the admin reset already end sessions. Read every mention of `passwordChangedAt` below with that in mind. The migration for this feature becomes `006_password_reset.sql` (005 is the sessions table).
+
 ## Goal
 
 A user who forgot their password can set a new one from the login screen without help from an admin. Sessions opened with the old password stop working. The admin reset (`POST /api/usuarios/:id/reset-password`) benefits from the same session invalidation.

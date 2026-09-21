@@ -1,5 +1,7 @@
 # Forgot Password Implementation Plan
 
+> **Revised 2026-09-20 (sessions are server-side now, already in production):** skip Task 3 (`lib/session.js`) and Task 7 entirely. In Task 4 drop the `passwordChangedAt` column from the migration and the schema, and name the migration `006_password_reset.sql` (005 is the sessions table). In Task 5 remove `passwordChangedAt` from `consumeToken`'s user update, give `createPasswordResetService` a `sessions` dependency (the controller passes `sessions` from `../lib/sessions.js`) and call `await sessions.endAll(record.usuarioId)` at the end of `confirmReset`, with a test that a fake `sessions.endAll` is called with the user id. In Task 9 the verification must check that a refresh cookie opened before the reset is rejected with 401. The `POST /api/auth/refresh` handler and `changePassword` already use sessions, do not touch them.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A user who forgot their password can set a new one from the login screen, and sessions opened with the old password stop working.
