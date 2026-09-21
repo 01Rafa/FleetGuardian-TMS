@@ -1,21 +1,8 @@
 import prisma from '../lib/prisma.js'
 import { recalcularVuelta } from '../lib/recalcularVuelta.js'
 import { catchAsync } from '../middleware/errorHandler.js'
-
-export function buildNextCodigo(prefix, lastCodigo) {
-  const next = lastCodigo ? parseInt(lastCodigo.slice(prefix.length), 10) + 1 : 1
-  return `${prefix}${String(next).padStart(3, '0')}`
-}
-
-async function generarCodigo(empresaId) {
-  const year = new Date().getFullYear()
-  const prefix = `VLT-${year}-`
-  const last = await prisma.vuelta.findFirst({
-    where: { codigo: { startsWith: prefix } },
-    orderBy: { codigo: 'desc' },
-  })
-  return buildNextCodigo(prefix, last?.codigo)
-}
+import { assertOwnedReferences } from '../lib/tenancy.js'
+import { withTripCode } from '../lib/tripCode.js'
 
 export function prepareCreateVueltaData({ body, empresaId, codigo }) {
   const { tramos = [], gastos = [], ...vueltaData } = body
@@ -73,8 +60,13 @@ export const listVueltas = catchAsync(async (req, res) => {
 
 export const createVuelta = catchAsync(async (req, res) => {
   const { empresaId } = req.user
-  const codigo = await generarCodigo(empresaId)
-  const vuelta = await prisma.vuelta.create({
+  const { camionId, conductorPrincipalId, conductorSecundarioId, tramos = [], gastos = [] } = req.body
+  await assertOwnedReferences(prisma, empresaId, {
+    camionId, conductorPrincipalId, conductorSecundarioId,
+    brokerIds: tramos.map(t => t.brokerId),
+    tramoIds: gastos.map(g => g.tramoId),
+  })
+  const vuelta = await withTripCode(prisma, empresaId, (tx, codigo) => tx.vuelta.create({
     data: prepareCreateVueltaData({ body: req.body, empresaId, codigo }),
     include: {
       camion: true,
@@ -82,7 +74,7 @@ export const createVuelta = catchAsync(async (req, res) => {
       conductorSecundario: true,
       tramos: { orderBy: { orden: 'asc' }, select: { destino: true, numeroCarga: true } },
     },
-  })
+  }))
   res.status(201).json(vuelta)
 })
 
@@ -112,6 +104,11 @@ export const updateVuelta = catchAsync(async (req, res) => {
   const { empresaId } = req.user
   const vuelta = await prisma.vuelta.findFirst({ where: { id: req.params.id, empresaId } })
   if (!vuelta) return res.status(404).json({ error: 'Vuelta not found' })
+  await assertOwnedReferences(prisma, empresaId, {
+    camionId: req.body.camionId,
+    conductorPrincipalId: req.body.conductorPrincipalId,
+    conductorSecundarioId: req.body.conductorSecundarioId,
+  })
   const data = { ...req.body }
   if (data.conductorSecundarioId === '') data.conductorSecundarioId = null
   await prisma.vuelta.update({ where: { id: req.params.id }, data })
@@ -161,9 +158,9 @@ export const mergeVueltas = catchAsync(async (req, res) => {
     return res.status(404).json({ error: 'Una o más vueltas no encontradas' })
   }
 
-  const codigo = await generarCodigo(empresaId)
+  await assertOwnedReferences(prisma, empresaId, { camionId, conductorPrincipalId, conductorSecundarioId })
 
-  const newVuelta = await prisma.$transaction(async (tx) => {
+  const newVuelta = await withTripCode(prisma, empresaId, async (tx, codigo) => {
     const vuelta = await tx.vuelta.create({
       data: {
         empresaId, camionId, conductorPrincipalId, baseSalida, fechaSalida: new Date(fechaSalida), codigo,

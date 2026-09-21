@@ -27,7 +27,7 @@ export const getSugerencias = catchAsync(async (req, res) => {
       select: { camionId: true },
     })
     const id = topId(rows, 'camionId')
-    const camion = id ? await prisma.camion.findUnique({ where: { id } }) : null
+    const camion = id ? await prisma.camion.findFirst({ where: { id, empresaId } }) : null
     return res.json({ camion: camion ?? null })
   }
 
@@ -40,7 +40,7 @@ export const getSugerencias = catchAsync(async (req, res) => {
       select: { conductorPrincipalId: true },
     })
     const id = topId(rows, 'conductorPrincipalId')
-    const conductor = id ? await prisma.conductor.findUnique({ where: { id } }) : null
+    const conductor = id ? await prisma.conductor.findFirst({ where: { id, empresaId } }) : null
     return res.json({ conductor: conductor ?? null })
   }
 
@@ -53,7 +53,7 @@ export const getSugerencias = catchAsync(async (req, res) => {
       select: { conductorSecundarioId: true },
     })
     const id = topId(rows, 'conductorSecundarioId')
-    const conductor = id ? await prisma.conductor.findUnique({ where: { id } }) : null
+    const conductor = id ? await prisma.conductor.findFirst({ where: { id, empresaId } }) : null
     return res.json({ conductor: conductor ?? null })
   }
 

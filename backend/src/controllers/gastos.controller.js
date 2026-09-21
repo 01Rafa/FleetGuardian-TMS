@@ -1,11 +1,13 @@
 import prisma from '../lib/prisma.js'
 import { recalcularVuelta } from '../lib/recalcularVuelta.js'
 import { catchAsync } from '../middleware/errorHandler.js'
+import { assertOwnedReferences } from '../lib/tenancy.js'
 
 export const createGasto = catchAsync(async (req, res) => {
   const { empresaId } = req.user
   const vuelta = await prisma.vuelta.findFirst({ where: { id: req.params.id, empresaId } })
   if (!vuelta) return res.status(404).json({ error: 'Vuelta not found' })
+  await assertOwnedReferences(prisma, empresaId, { tramoIds: [req.body.tramoId], vueltaId: req.params.id })
   const gasto = await prisma.gasto.create({ data: { ...req.body, vueltaId: req.params.id } })
   await recalcularVuelta(req.params.id)
   res.status(201).json(gasto)
@@ -18,6 +20,7 @@ export const updateGasto = catchAsync(async (req, res) => {
     include: { vuelta: { select: { empresaId: true } } },
   })
   if (!gasto || gasto.vuelta.empresaId !== empresaId) return res.status(404).json({ error: 'Gasto not found' })
+  await assertOwnedReferences(prisma, empresaId, { tramoIds: [req.body.tramoId], vueltaId: gasto.vueltaId })
   const updated = await prisma.gasto.update({ where: { id: req.params.id }, data: req.body })
   await recalcularVuelta(gasto.vueltaId)
   res.json(updated)
