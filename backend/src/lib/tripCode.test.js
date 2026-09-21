@@ -12,6 +12,7 @@ test('formatCodigo pads to three digits and grows past 999', () => {
 // Fake database: the counter lives in memory and $transaction runs the callback with a fake transaction.
 function fakePrisma() {
   const counters = new Map()
+  const realigned = []
   const tx = {
     $queryRaw: async (_strings, empresaId, anio) => {
       const key = `${empresaId}/${anio}`
@@ -19,7 +20,13 @@ function fakePrisma() {
       return [{ ultimo: counters.get(key) }]
     },
   }
-  return { counters, $transaction: async fn => fn(tx) }
+  return {
+    counters,
+    realigned,
+    $transaction: async fn => fn(tx),
+    // Called outside the transaction, after a unique violation, to push the counter past the existing codes.
+    $executeRaw: async (_strings, ...values) => { realigned.push(values) },
+  }
 }
 
 test('nextCodigo counts per company and per year', async () => {
@@ -38,7 +45,7 @@ test('withTripCode passes the code to the creator and returns its result', async
   assert.deepEqual(out, { codigo: 'VLT-2026-001' })
 })
 
-test('withTripCode retries on a unique violation and moves to the next number', async () => {
+test('withTripCode realigns the counter outside the failed transaction and retries', async () => {
   const p = fakePrisma()
   let calls = 0
   const out = await withTripCode(p, 'A', async (_tx, codigo) => {
@@ -47,7 +54,9 @@ test('withTripCode retries on a unique violation and moves to the next number', 
     return { codigo }
   }, { anio: 2026 })
   assert.equal(calls, 2)
-  assert.equal(out.codigo, 'VLT-2026-002')
+  assert.equal(p.realigned.length, 1)
+  assert.ok(p.realigned[0].includes('A') && p.realigned[0].includes(2026), 'realigns the counter of that company and year')
+  assert.match(out.codigo, /^VLT-2026-/)
 })
 
 test('withTripCode gives up after five attempts', async () => {
@@ -58,6 +67,7 @@ test('withTripCode gives up after five attempts', async () => {
     err => err.code === 'P2002',
   )
   assert.equal(calls, 5)
+  assert.equal(p.realigned.length, 4, 'realigns between attempts, not after the last one')
 })
 
 test('withTripCode does not retry other errors', async () => {
