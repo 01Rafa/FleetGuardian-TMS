@@ -27,6 +27,8 @@ import { startNotificacionesCron } from './jobs/notificaciones.job.js'
 import { runSeed } from './seeds/runSeed.js'
 import { getAllowedOrigins, isOriginAllowed } from './lib/cors.js'
 import { validateEnv } from './lib/env.js'
+import prisma from './lib/prisma.js'
+import { assertDatabaseEnvironment } from './lib/environment.js'
 
 validateEnv()
 
@@ -81,6 +83,15 @@ app.use('/api/ratecon', rateconRouter)
 app.use('/api/registration', registrationRouter)
 
 app.use(errorHandler)
+
+// Stop before the seed or the cron touch anything if this database is not the environment we think it is.
+try {
+  await assertDatabaseEnvironment(prisma, process.env.APP_ENV)
+  console.log(`[env] APP_ENV=${process.env.APP_ENV}, the database marker matches`)
+} catch (err) {
+  console.error(`[env] ${err.message}`)
+  process.exit(1)
+}
 
 const PORT = process.env.PORT ?? 3000
 runSeed().catch(err => console.error('[seed] Failed to seed cities:', err))

@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 import * as dotenv from 'dotenv'
+import { readMarker, checkDestructiveAllowed } from '../src/lib/environment.js'
 
 dotenv.config()
 
@@ -9,6 +10,10 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
+  // This script deletes every table. It only runs on a database marked with the same non-production APP_ENV.
+  const verdict = checkDestructiveAllowed({ appEnv: process.env.APP_ENV, marker: await readMarker(prisma) })
+  if (!verdict.ok) throw new Error(verdict.message)
+
   await prisma.gasto.deleteMany()
   await prisma.tramo.deleteMany()
   await prisma.vuelta.deleteMany()
@@ -159,4 +164,4 @@ async function main() {
   console.log('Seed completed.')
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect())
+main().catch(err => { console.error(err.message ?? err); process.exitCode = 1 }).finally(() => prisma.$disconnect())

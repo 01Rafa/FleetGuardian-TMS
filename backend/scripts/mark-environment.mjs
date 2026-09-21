@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import prisma from '../src/lib/prisma.js'
 import { APP_ENVS } from '../src/lib/env.js'
-import { readMarker } from '../src/lib/environment.js'
+import { readMarker, checkMarkAllowed } from '../src/lib/environment.js'
 
 const [name, ...flags] = process.argv.slice(2)
 if (!APP_ENVS.includes(name)) {
@@ -11,14 +11,16 @@ if (!APP_ENVS.includes(name)) {
 
 try {
   const current = await readMarker(prisma)
-  if (current && current !== name && !flags.includes('--force')) {
-    console.error(`This database is already marked "${current}". Use --force only if you are sure.`)
+  const hasData = (await prisma.usuario.count()) > 0
+  const verdict = checkMarkAllowed({ name, current, hasData, force: flags.includes('--force') })
+  if (!verdict.ok) {
+    console.error(verdict.message)
     process.exit(1)
   }
   await prisma.$executeRaw`INSERT INTO "AppEnvironment" ("id", "name") VALUES (1, ${name}) ON CONFLICT ("id") DO UPDATE SET "name" = EXCLUDED."name"`
   console.log(`Database marked as ${name}`)
 } catch (err) {
-  if (/does not exist/i.test(String(err?.message))) {
+  if (/does not exist/i.test(String(err?.message)) && /AppEnvironment/.test(String(err?.message))) {
     console.error('The AppEnvironment table does not exist. Apply backend/migrations/manual/006_environment_marker.sql first.')
     process.exit(1)
   }

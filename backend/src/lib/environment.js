@@ -16,7 +16,23 @@ export function checkDestructiveAllowed({ appEnv, marker }) {
   if (appEnv === 'production') {
     return { ok: false, message: 'Refusing to run: this script deletes data and never runs with APP_ENV=production.' }
   }
+  // No advice to "mark it" here: marking a real production database as development would unlock this script.
+  if (!marker) {
+    return { ok: false, message: 'Refusing to run: this database has no environment marker, so it could be production. Build development databases with scripts/setup-db.mjs.' }
+  }
   return checkEnvironmentMarker({ appEnv, marker })
+}
+
+// For scripts/mark-environment.mjs. Marking a database that already holds data as non-production is how a
+// production database would end up unprotected, so it needs an explicit --force.
+export function checkMarkAllowed({ name, current, hasData, force }) {
+  if (current && current !== name && !force) {
+    return { ok: false, message: `This database is already marked "${current}". Use --force only if you are sure.` }
+  }
+  if (!current && hasData && name !== 'production' && !force) {
+    return { ok: false, message: `This database already has data. Marking it "${name}" could hide that it is production. Use --force only if you are sure.` }
+  }
+  return { ok: true }
 }
 
 // For scripts/setup-db.mjs, which builds a database from scratch. A fresh database has no marker yet.

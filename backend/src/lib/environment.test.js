@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { checkEnvironmentMarker, checkDestructiveAllowed, checkSetupAllowed, readMarker, assertDatabaseEnvironment } from './environment.js'
+import { checkEnvironmentMarker, checkDestructiveAllowed, checkSetupAllowed, checkMarkAllowed, readMarker, assertDatabaseEnvironment } from './environment.js'
 
 test('the server starts when the database marker equals APP_ENV', () => {
   assert.deepEqual(checkEnvironmentMarker({ appEnv: 'production', marker: 'production' }), { ok: true })
@@ -66,4 +66,27 @@ test('assertDatabaseEnvironment resolves on a match and throws the message on a 
   await assertDatabaseEnvironment(fakePrisma(() => [{ name: 'production' }]), 'production')
   await assert.rejects(assertDatabaseEnvironment(fakePrisma(() => [{ name: 'production' }]), 'development'), /marked "production"/)
   await assert.rejects(assertDatabaseEnvironment(fakePrisma(() => []), 'production'), /no environment marker/)
+})
+
+test('a destructive script on an unmarked database does not advise marking it', () => {
+  const res = checkDestructiveAllowed({ appEnv: 'development', marker: null })
+  assert.equal(res.ok, false)
+  assert.match(res.message, /could be production/)
+  assert.doesNotMatch(res.message, /mark-environment/)
+})
+
+test('marking: a database with data and no marker cannot be marked as non-production without --force', () => {
+  assert.equal(checkMarkAllowed({ name: 'development', current: null, hasData: true, force: false }).ok, false)
+  assert.equal(checkMarkAllowed({ name: 'development', current: null, hasData: true, force: true }).ok, true)
+})
+
+test('marking: production and empty databases can be marked freely', () => {
+  assert.equal(checkMarkAllowed({ name: 'production', current: null, hasData: true, force: false }).ok, true)
+  assert.equal(checkMarkAllowed({ name: 'development', current: null, hasData: false, force: false }).ok, true)
+})
+
+test('marking: changing an existing marker needs --force, repeating it does not', () => {
+  assert.equal(checkMarkAllowed({ name: 'development', current: 'production', hasData: true, force: false }).ok, false)
+  assert.equal(checkMarkAllowed({ name: 'development', current: 'production', hasData: true, force: true }).ok, true)
+  assert.equal(checkMarkAllowed({ name: 'production', current: 'production', hasData: true, force: false }).ok, true)
 })
