@@ -282,3 +282,9 @@ model RouteCache {
 
   @@unique([origenNormalized, destinoNormalized])
 }
+
+// One row that says which environment this database is. Created by migration 006, written by scripts/mark-environment.mjs.
+model AppEnvironment {
+  id   Int    @id @default(1)
+  name String
+}
