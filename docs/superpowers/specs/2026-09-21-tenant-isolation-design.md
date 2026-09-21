@@ -74,7 +74,7 @@ DROP INDEX IF EXISTS "Vuelta_codigo_key";
 
 - `formatCodigo(anio, n)` returns `VLT-${anio}-${String(n).padStart(3, '0')}` (three digits minimum, grows past 999 without breaking).
 - `nextCodigo(tx, empresaId, anio)` runs one atomic statement inside the caller's transaction: `INSERT INTO "ContadorVuelta" ... VALUES (empresaId, anio, 1) ON CONFLICT (...) DO UPDATE SET "ultimo" = "ContadorVuelta"."ultimo" + 1 RETURNING "ultimo"`, then formats the code.
-- `withTripCode(prisma, empresaId, buildAndCreate, { maxAttempts = 5 })` opens `prisma.$transaction`, gets the code, calls `buildAndCreate(tx, codigo)` and returns its result. On a Prisma `P2002` unique violation on `(empresaId, codigo)` it retries (which bumps the counter past any code created by the old backend), and throws after `maxAttempts`.
+- `withTripCode(prisma, empresaId, buildAndCreate, { maxAttempts = 5 })` opens `prisma.$transaction`, gets the code, calls `buildAndCreate(tx, codigo)` and returns its result. On a Prisma `P2002` unique violation on `(empresaId, codigo)` it first realigns the counter to the largest existing code of that company and year in a separate statement OUTSIDE the failed transaction (the rollback also undoes that transaction's counter increment, so a plain retry would ask for the same number again; the integration suite found this), then retries, and throws after `maxAttempts`. The transaction runs with `maxWait: 10000` and `timeout: 20000` because the counter row stays locked until commit.
 
 `createVuelta` and `mergeVueltas` use `withTripCode`. `buildNextCodigo` and `generarCodigo` are removed together with their old test.
 
@@ -91,7 +91,7 @@ DROP INDEX IF EXISTS "Vuelta_codigo_key";
 
 - Company A gets 400 on every endpoint that receives one of B's ids (create, update and merge trips, create and update legs, create and update expenses).
 - Company A gets 404 reading, updating or deleting B's trips, legs and expenses, and sees none of B's records in any list.
-- Two companies both get `VLT-<year>-001`; 20 simultaneous creates for one company give 20 distinct consecutive codes; a deleted trip's code is not reissued.
+- Two companies both get `VLT-<year>-001`; 8 simultaneous creates for one company give 8 distinct consecutive codes (the test database connection pool is 10); a deleted trip's code is not reissued.
 - A company admin's `cache-stats` has no `topRoutes`.
 - Teardown deletes the test companies and everything under them.
 
