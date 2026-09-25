@@ -315,5 +315,22 @@
       "color": "Color",
       "registrationExpiry": "Registration expiry"
     }
+  },
+  "cdl": {
+    "upload": "Upload CDL",
+    "reading": "Reading document…",
+    "hint": "PDF or image, up to 10 MB. It fills the fields below so you can review them.",
+    "filled": "Read from the document",
+    "missing": "Not found in the document",
+    "review": "Review the values before saving.",
+    "nothingFound": "Nothing could be read from this document. Try a clearer photo or enter the data by hand.",
+    "error": "Could not read the document",
+    "tooBig": "The file is larger than 10 MB",
+    "fields": {
+      "nombre": "Name",
+      "cdlNumber": "CDL #",
+      "cdlState": "CDL State",
+      "cdlExpiry": "CDL Expiry"
+    }
   }
 }

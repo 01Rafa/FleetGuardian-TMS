@@ -6,9 +6,12 @@ import { conductoresApi } from '../api/conductores.api'
 import { StatusBadge } from '../components/StatusBadge'
 import { getComplianceStatus } from '../utils/compliance'
 import { useRole } from '../hooks/useRole'
+import { DatePicker } from '../components/DatePicker'
+import { CdlUpload } from '../components/CdlUpload'
+import { applyCdl } from '../utils/cdl'
 
 const ESTADOS = ['activo', 'inactivo', 'vacaciones']
-const EMPTY = { nombre: '', licencia: '', telefono: '', estado: 'activo' }
+const EMPTY = { nombre: '', licencia: '', telefono: '', estado: 'activo', cdlNumber: '', cdlState: '', cdlExpiry: '' }
 
 export default function Conductores() {
   const qc = useQueryClient()
@@ -55,6 +58,9 @@ export default function Conductores() {
       ...(form.licencia.trim() ? { licencia: form.licencia.trim() } : {}),
       ...(form.telefono.trim() ? { telefono: form.telefono.trim() } : {}),
       estado: form.estado,
+      ...(form.cdlNumber.trim() ? { cdlNumber: form.cdlNumber.trim() } : {}),
+      ...(form.cdlState.trim() ? { cdlState: form.cdlState.trim().toUpperCase() } : {}),
+      ...(form.cdlExpiry ? { cdlExpiry: new Date(form.cdlExpiry).toISOString() } : {}),
     })
   }
 
@@ -77,6 +83,9 @@ export default function Conductores() {
       {showForm && !isViewer && (
         <form onSubmit={handleSubmit} className="bg-surface border border-border-dim rounded-xl p-5 space-y-4">
           <h3 className="font-serif text-lg text-text-primary">{t('drivers.formTitle')}</h3>
+
+          <CdlUpload onExtracted={(d) => setForm(f => applyCdl(f, d).form)} />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('drivers.name')} *</label>
@@ -98,6 +107,20 @@ export default function Conductores() {
               <select className={field} value={form.estado} onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}>
                 {ESTADOS.map(s => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
               </select>
+            </div>
+            <div>
+              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('drivers.cdlNumber')}</label>
+              <input className={field} placeholder="FL1234567" value={form.cdlNumber}
+                onChange={e => setForm(f => ({ ...f, cdlNumber: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('drivers.cdlState')}</label>
+              <input className={field} placeholder="FL" maxLength={2} value={form.cdlState}
+                onChange={e => setForm(f => ({ ...f, cdlState: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('compliance.cdlExpiry')}</label>
+              <DatePicker value={form.cdlExpiry} onChange={v => setForm(f => ({ ...f, cdlExpiry: v }))} />
             </div>
           </div>
           {error && <p className="text-danger text-sm">{error}</p>}

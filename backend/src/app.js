@@ -21,6 +21,7 @@ import routingRouter from './routes/routing.js'
 import adminRouter from './routes/admin.js'
 import rateconRouter from './routes/ratecon.js'
 import registrationRouter from './routes/registration.js'
+import cdlRouter from './routes/cdl.js'
 import { jwtAuth } from './middleware/auth.js'
 import { getAllowedOrigins, isOriginAllowed } from './lib/cors.js'
 
@@ -75,5 +76,6 @@ app.use('/api/routing', routingRouter)
 app.use('/api/admin', adminRouter)
 app.use('/api/ratecon', rateconRouter)
 app.use('/api/registration', registrationRouter)
+app.use('/api/cdl', cdlRouter)
 
 app.use(errorHandler)
