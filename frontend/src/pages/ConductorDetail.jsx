@@ -6,6 +6,8 @@ import { conductoresApi } from '../api/conductores.api'
 import { StatusBadge } from '../components/StatusBadge'
 import { getComplianceStatus, COMPLIANCE_FIELDS, computeNextDue } from '../utils/compliance'
 import { DatePicker } from '../components/DatePicker'
+import { CdlUpload } from '../components/CdlUpload'
+import { applyCdl } from '../utils/cdl'
 import { fmtDateUS } from '../utils/format'
 
 const ESTADOS = ['activo', 'inactivo', 'vacaciones']
@@ -85,6 +87,7 @@ export default function ConductorDetail() {
       telefono: conductor.telefono ?? '',
       cdlNumber: conductor.cdlNumber ?? '',
       cdlState: conductor.cdlState ?? '',
+      cdlExpiry: toInputDate(conductor.cdlExpiry),
       estado: conductor.estado,
     })
     setEditInfo(true)
@@ -99,6 +102,7 @@ export default function ConductorDetail() {
       telefono: infoForm.telefono.trim() || null,
       cdlNumber: infoForm.cdlNumber.trim() || null,
       cdlState: infoForm.cdlState.trim().toUpperCase() || null,
+      cdlExpiry: infoForm.cdlExpiry ? new Date(infoForm.cdlExpiry).toISOString() : null,
       estado: infoForm.estado,
     })
   }
@@ -177,6 +181,9 @@ export default function ConductorDetail() {
 
         {editInfo ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <CdlUpload onExtracted={(d) => setInfoForm(f => applyCdl(f, d).form)} />
+            </div>
             <div>
               <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('drivers.name')} *</label>
               <input className={field} value={infoForm.nombre} onChange={e => setInfoForm(f => ({ ...f, nombre: e.target.value }))} />

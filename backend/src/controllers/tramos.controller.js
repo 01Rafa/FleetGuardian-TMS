@@ -2,6 +2,7 @@ import prisma from '../lib/prisma.js'
 import { recalcularVuelta } from '../lib/recalcularVuelta.js'
 import { catchAsync } from '../middleware/errorHandler.js'
 import { getRouteMiles } from '../services/routingService.js'
+import { assertOwnedReferences } from '../lib/tenancy.js'
 
 async function calcDistance(tramoId, origen, destino) {
   if (!origen || !destino) return
@@ -20,6 +21,7 @@ export const createTramo = catchAsync(async (req, res) => {
   const { empresaId } = req.user
   const vuelta = await prisma.vuelta.findFirst({ where: { id: req.params.id, empresaId } })
   if (!vuelta) return res.status(404).json({ error: 'Vuelta not found' })
+  await assertOwnedReferences(prisma, empresaId, { brokerIds: [req.body.brokerId] })
   const tramo = await prisma.tramo.create({ data: { ...req.body, vueltaId: req.params.id } })
   await recalcularVuelta(req.params.id)
   // Fire-and-forget: don't await, don't block response
@@ -34,6 +36,7 @@ export const updateTramo = catchAsync(async (req, res) => {
     include: { vuelta: { select: { empresaId: true } } },
   })
   if (!tramo || tramo.vuelta.empresaId !== empresaId) return res.status(404).json({ error: 'Tramo not found' })
+  await assertOwnedReferences(prisma, empresaId, { brokerIds: [req.body.brokerId] })
   const updated = await prisma.tramo.update({ where: { id: req.params.id }, data: req.body })
   await recalcularVuelta(tramo.vueltaId)
   // Recalculate distance if origin or destination changed

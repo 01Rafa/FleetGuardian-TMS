@@ -117,5 +117,37 @@ Estado tras `npm audit fix` sin `--force` (21 de septiembre de 2026):
 | `003_unit_number.sql` | Número de unidad |
 | `005_sessions.sql` | Tabla `Sesion` (sesiones con rotación) |
 | `006_environment_marker.sql` | Tabla `AppEnvironment` (marca del entorno) |
+| `007_tenant_trip_codes.sql` | Tabla `ContadorVuelta` y código de viaje único por empresa |
 
-No existe la 004. La siguiente libre es la `007`, reservada para "olvidé mi contraseña".
+No existe la 004. La siguiente libre es la `008`, reservada para "olvidé mi contraseña".
+
+## 10. Scripts para cualquier entorno (`backend/scripts/`)
+
+Sirven igual para desarrollo y para producción. Todos exigen `--env <nombre>`, leen la conexión de la variable `DATABASE_URL` y **se niegan a continuar si la marca de la base de datos no coincide** con ese nombre. Imprimen solo números, nunca datos, ids ni credenciales.
+
+| Script | Para qué sirve |
+|---|---|
+| `apply-sql.mjs migrations/manual/<archivo>.sql --env <nombre>` | Aplica una migración manual (todas son idempotentes) |
+| `audit-tenancy.mjs --env <nombre>` | Solo lectura. Cuenta datos que mezclan empresas y códigos que bloquearían la migración 007 |
+| `cleanup-test-data.mjs --env <nombre>` | Borra las empresas de prueba `Prueba Dia4 (borrar)` cuyos usuarios sean `prueba.dia4.*@example.com` |
+| `mark-environment.mjs <nombre>` | Marca una base de datos con su entorno |
+| `setup-db.mjs` | Monta una base de desarrollo nueva |
+
+**Cómo ejecutarlos en producción** sin dejar la conexión en ningún archivo ni en el historial. En PowerShell:
+
+```powershell
+cd backend
+$env:DATABASE_URL = Read-Host "Cadena de conexión de producción"
+node scripts/audit-tenancy.mjs --env production
+Remove-Item Env:DATABASE_URL
+```
+
+- `Read-Host` te pide la cadena en pantalla: no queda en el historial de comandos.
+- El valor escrito en la sesión tiene prioridad sobre el `.env`, que solo tiene la base de desarrollo.
+- La última línea borra la variable. También desaparece al cerrar la terminal.
+- Si te equivocas y pegas la cadena de desarrollo, el script responde `Refusing: this database is marked "development"...` y no hace nada.
+- La cadena de producción es la de Railway (`DATABASE_URL`) o la de Supabase, la de pooler.
+
+## 11. Pruebas de integración
+
+`npm run test:integration` (desde `backend/`) crea dos empresas reales en la base de **desarrollo** y comprueba que una no puede referenciar, leer, editar ni borrar los datos de la otra, y que los códigos de viaje son por empresa. Se niega a correr si la marca de la base no es `development`. No forma parte de `npm test` ni del CI, porque necesita una base de datos.

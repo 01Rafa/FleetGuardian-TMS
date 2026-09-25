@@ -21,6 +21,7 @@ model Empresa {
   brokers        Broker[]
   notificaciones Notificacion[]
   trailers       Trailer[]
+  contadoresVuelta ContadorVuelta[]
 }
 
 model Usuario {
@@ -183,7 +184,7 @@ model Vuelta {
   conductorPrincipal    Conductor   @relation("VueltaConductorPrincipal", fields: [conductorPrincipalId], references: [id])
   conductorSecundarioId String?
   conductorSecundario   Conductor?  @relation("VueltaConductorSecundario", fields: [conductorSecundarioId], references: [id])
-  codigo                String      @unique
+  codigo                String
   baseSalida            String
   fechaSalida           DateTime
   fechaRegreso          DateTime?
@@ -196,6 +197,7 @@ model Vuelta {
   tramos                Tramo[]
   gastos                Gasto[]
 
+  @@unique([empresaId, codigo])
   @@index([empresaId])
 }
 
@@ -287,4 +289,14 @@ model RouteCache {
 model AppEnvironment {
   id   Int    @id @default(1)
   name String
+}
+
+// Atomic yearly counter behind the VLT-AAAA-NNN trip codes. Created by migration 007.
+model ContadorVuelta {
+  empresaId String
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  anio      Int
+  ultimo    Int     @default(0)
+
+  @@id([empresaId, anio])
 }

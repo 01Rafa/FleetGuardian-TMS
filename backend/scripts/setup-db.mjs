@@ -26,7 +26,8 @@ if (!verdict.ok) {
 }
 
 console.log(`[setup] building the ${appEnv} database`)
-execSync('npx prisma db push --skip-generate', { stdio: 'inherit' })
+// The schema engine hangs behind the transaction pooler (port 6543): give it the direct connection.
+execSync('npx prisma db push', { stdio: 'inherit', env: { ...process.env, DATABASE_URL: process.env.DIRECT_URL ?? process.env.DATABASE_URL } })
 
 const dir = new URL('../migrations/manual/', import.meta.url)
 for (const file of readdirSync(dir).filter(f => f.endsWith('.sql')).sort()) {
