@@ -4,6 +4,9 @@ buildCommand = "npx prisma generate"
 
 [deploy]
 startCommand = "node src/index.js"
-preDeployCommand = "DATABASE_URL=$DIRECT_URL npx prisma db push"
+# --accept-data-loss added after running backend/scripts/audit-tenancy.mjs to verify
+# there are no duplicate trip codes (empresaId, codigo) within a company that would
+# be affected by the new unique constraint on the Vuelta table.
+preDeployCommand = "DATABASE_URL=$DIRECT_URL npx prisma db push --accept-data-loss"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30
