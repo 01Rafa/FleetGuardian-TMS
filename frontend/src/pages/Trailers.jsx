@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -9,7 +9,7 @@ import { getTrailerComplianceStatus } from '../utils/trailerComplianceFields'
 import { useRole } from '../hooks/useRole'
 import { useWeightUnit } from '../context/WeightUnitContext'
 import { displayToTons, formatWeight } from '../utils/weight'
-import { unitLabel, hasUnitNumber } from '../utils/unit'
+import { unitLabel, hasUnitNumber, compareByUnitNumber } from '../utils/unit'
 import { DatePicker } from '../components/DatePicker'
 import { RegistrationUpload } from '../components/RegistrationUpload'
 import { applyRegistration } from '../utils/registration'
@@ -35,6 +35,8 @@ export default function Trailers() {
     queryKey: ['trailers'],
     queryFn: trailersApi.list,
   })
+
+  const sortedTrailers = useMemo(() => [...trailers].sort(compareByUnitNumber), [trailers])
 
   const createMutation = useMutation({
     mutationFn: (data) => trailersApi.create(data),
@@ -170,7 +172,7 @@ export default function Trailers() {
 
       {isLoading ? <p className="text-text-muted">{t('common.loading')}</p> : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {trailers.map(tr => {
+          {sortedTrailers.map(tr => {
             const { status, closest } = getTrailerComplianceStatus(tr)
             const borderCls = status === 'red' ? 'border-danger/50'
               : status === 'yellow' ? 'border-yellow-500/40'
@@ -232,7 +234,7 @@ export default function Trailers() {
               </div>
             )
           })}
-          {trailers.length === 0 && <p className="text-text-muted text-sm col-span-3">{t('trailers.noTrailers')}</p>}
+          {sortedTrailers.length === 0 && <p className="text-text-muted text-sm col-span-3">{t('trailers.noTrailers')}</p>}
         </div>
       )}
     </div>
