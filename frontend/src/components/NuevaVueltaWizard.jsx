@@ -12,6 +12,7 @@ import { brokersApi } from '../api/brokers.api'
 import { rateconApi } from '../api/ratecon.api'
 import BrokerAutocomplete from './BrokerAutocomplete'
 import { useDistanceUnit } from '../context/DistanceUnitContext'
+import { unitLabel } from '../utils/unit'
 import { DateTimePicker } from './DatePicker'
 import { useRouteDistance } from '../hooks/useRouteDistance'
 
@@ -361,7 +362,7 @@ export default function NuevaVueltaWizard() {
   const inputCls = 'w-full bg-surface-2 border border-border-dim rounded-lg px-3 py-2 text-text-primary text-sm focus:outline-none focus:border-gold'
 
   const conductorPrincipalNombre = conductores.find(c => c.id === info.conductorPrincipalId)?.nombre
-  const camionNombre = camiones.find(c => c.id === info.camionId)?.placa
+  const camionNombre = unitLabel(camiones.find(c => c.id === info.camionId))
 
   // Effective last-location for Step 2 hint: truck > driver
   const effectiveLastLoc = truckLastLoc ?? driverLastLoc
@@ -458,7 +459,7 @@ export default function NuevaVueltaWizard() {
               <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">{t('trips.detail.truck')}</label>
               <select value={info.camionId} onChange={e => onCamionChange(e.target.value)} className={inputCls}>
                 <option value="">Seleccionar...</option>
-                {camiones.map(c => <option key={c.id} value={c.id}>{c.placa} — {c.modelo}</option>)}
+                {camiones.map(c => <option key={c.id} value={c.id}>{unitLabel(c)} — {c.modelo}</option>)}
               </select>
               {hints.camion && info.camionId === hints.camion.id && (
                 <p className="text-gold/70 text-xs mt-1">{t('trips.hints.usualTruck')} {conductorPrincipalNombre}</p>

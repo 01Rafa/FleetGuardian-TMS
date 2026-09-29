@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -8,7 +8,7 @@ import { getTruckComplianceStatus } from '../utils/truckComplianceFields'
 import { useRole } from '../hooks/useRole'
 import { useWeightUnit } from '../context/WeightUnitContext'
 import { displayToTons, formatWeight } from '../utils/weight'
-import { unitLabel, hasUnitNumber } from '../utils/unit'
+import { unitLabel, hasUnitNumber, compareByUnitNumber } from '../utils/unit'
 import { DatePicker } from '../components/DatePicker'
 import { RegistrationUpload } from '../components/RegistrationUpload'
 import { applyRegistration } from '../utils/registration'
@@ -34,6 +34,8 @@ export default function Flota() {
     queryKey: ['camiones'],
     queryFn: camionesApi.list,
   })
+
+  const sortedCamiones = useMemo(() => [...camiones].sort(compareByUnitNumber), [camiones])
 
   const createMutation = useMutation({
     mutationFn: (data) => camionesApi.create(data),
@@ -169,7 +171,7 @@ export default function Flota() {
 
       {isLoading ? <p className="text-text-muted">{t('common.loading')}</p> : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {camiones.map(c => {
+          {sortedCamiones.map(c => {
             const { status, closest } = getTruckComplianceStatus(c)
             const borderCls = status === 'red' ? 'border-danger/50'
               : status === 'yellow' ? 'border-yellow-500/40'
@@ -229,7 +231,7 @@ export default function Flota() {
             </div>
           )
           })}
-          {camiones.length === 0 && <p className="text-text-muted text-sm col-span-3">{t('fleet.noTrucks')}</p>}
+          {sortedCamiones.length === 0 && <p className="text-text-muted text-sm col-span-3">{t('fleet.noTrucks')}</p>}
         </div>
       )}
     </div>
