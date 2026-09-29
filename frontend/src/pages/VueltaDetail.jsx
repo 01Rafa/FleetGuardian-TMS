@@ -12,6 +12,7 @@ import { GastosDonut } from '../components/GastosDonut'
 import BrokerAutocomplete from '../components/BrokerAutocomplete'
 import { DateTimePicker } from '../components/DatePicker'
 import { useRouteDistance } from '../hooks/useRouteDistance'
+import { unitLabel } from '../utils/unit'
 
 const ESTADOS = ['planificada', 'en_curso', 'completada', 'facturada']
 const TIPOS_TRAMO = ['carga', 'vacio', 'regreso']
@@ -335,14 +336,14 @@ export default function VueltaDetail() {
                   {conductores.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                 </select>
                 {infoHints.conductorPrincipal && infoForm.conductorPrincipalId === infoHints.conductorPrincipal.id && (
-                  <p className="text-gold/70 text-xs mt-0.5">{t('trips.hints.usualDriver')} {camiones.find(c => c.id === infoForm.camionId)?.placa}</p>
+                  <p className="text-gold/70 text-xs mt-0.5">{t('trips.hints.usualDriver')} {unitLabel(camiones.find(c => c.id === infoForm.camionId))}</p>
                 )}
               </div>
               <div>
                 <label className="text-text-muted text-xs uppercase tracking-wide block mb-1">{t('trips.detail.truck')}</label>
                 <select className={f} value={infoForm.camionId} onChange={e => onInfoCamionChange(e.target.value)}>
                   <option value="">Seleccionar...</option>
-                  {camiones.map(c => <option key={c.id} value={c.id}>{c.placa} — {c.modelo}</option>)}
+                  {camiones.map(c => <option key={c.id} value={c.id}>{unitLabel(c)} — {c.modelo}</option>)}
                 </select>
                 {infoHints.camion && infoForm.camionId === infoHints.camion.id && (
                   <p className="text-gold/70 text-xs mt-0.5">{t('trips.hints.usualTruck')} {conductores.find(c => c.id === infoForm.conductorPrincipalId)?.nombre}</p>
