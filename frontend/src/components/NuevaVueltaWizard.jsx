@@ -372,7 +372,7 @@ export default function NuevaVueltaWizard() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <h2 className="font-serif text-2xl text-text-primary">{t('trips.wizard.title')}</h2>
         <div className="flex gap-2 ml-auto">
           {[1, 2, 3].map(s => (
@@ -441,7 +441,7 @@ export default function NuevaVueltaWizard() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Conductor Principal */}
             <div>
               <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">{t('trips.detail.mainDriver')}</label>
@@ -467,7 +467,7 @@ export default function NuevaVueltaWizard() {
             </div>
 
             {/* Conductor Secundario */}
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               {!showConductor2 ? (
                 <button type="button" onClick={onShowConductor2} className="text-text-muted text-xs hover:text-gold transition-colors">
                   {t('trips.detail.addSecondDriver')}
@@ -527,7 +527,7 @@ export default function NuevaVueltaWizard() {
               </div>
             </SortableContext>
           </DndContext>
-          <div className="grid grid-cols-2 gap-3 p-4 bg-surface-2 rounded-lg border border-border-dim">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-surface-2 rounded-lg border border-border-dim">
             <div>
               <input value={newTramo.origen} onChange={e => setNewTramo(prev => ({ ...prev, origen: e.target.value }))} className={inputCls} placeholder={t('trips.leg.origin')} />
               {effectiveLastLocLabel && newTramo.origen === effectiveLastLoc?.location && (
@@ -553,7 +553,7 @@ export default function NuevaVueltaWizard() {
             <input value={newTramo.tipoCarga} onChange={e => setNewTramo(prev => ({ ...prev, tipoCarga: e.target.value }))} className={inputCls} placeholder="Commodity (ej. Produce)" />
             <input value={newTramo.tipoEquipo} onChange={e => setNewTramo(prev => ({ ...prev, tipoEquipo: e.target.value }))} className={inputCls} placeholder="Equipo (ej. Reefer 53')" />
             <DateTimePicker value={newTramo.fechaEntrega} onChange={v => setNewTramo(prev => ({ ...prev, fechaEntrega: v }))} />
-            <button onClick={addTramo} className="col-span-2 bg-gold/20 text-gold border border-gold/30 rounded-lg text-sm hover:bg-gold/30 transition-colors py-2">{t('trips.leg.addLeg')}</button>
+            <button onClick={addTramo} className="sm:col-span-2 bg-gold/20 text-gold border border-gold/30 rounded-lg text-sm hover:bg-gold/30 transition-colors py-2">{t('trips.leg.addLeg')}</button>
           </div>
           <p className="text-text-muted text-xs">{t('trips.wizard.calculatedIncome')} <span className="text-success">${ingresoTotal.toLocaleString('en-US')}</span></p>
           <div className="flex justify-between items-start">
@@ -577,21 +577,21 @@ export default function NuevaVueltaWizard() {
           <h3 className="font-serif text-lg text-text-primary">{t('trips.wizard.step3Title')}</h3>
           <div className="space-y-2">
             {gastos.map((g, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-surface-2 border border-border-dim rounded-lg text-sm">
+              <div key={i} className="flex items-center justify-between gap-2 flex-wrap p-3 bg-surface-2 border border-border-dim rounded-lg text-sm">
                 <span className="text-text-muted capitalize">{g.categoria}</span>
-                <span className="text-text-primary">{g.descripcion}</span>
+                <span className="text-text-primary truncate">{g.descripcion}</span>
                 <span className="text-danger">${Number(g.monto).toLocaleString('en-US')}</span>
                 <button onClick={() => setGastos(arr => arr.filter((_, j) => j !== i))} className="text-danger text-xs">✕</button>
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-3 gap-3 p-4 bg-surface-2 rounded-lg border border-border-dim">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-surface-2 rounded-lg border border-border-dim">
             <select value={newGasto.categoria} onChange={e => setNewGasto(g => ({ ...g, categoria: e.target.value }))} className={inputCls}>
               {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <input type="number" value={newGasto.monto} onChange={e => setNewGasto(g => ({ ...g, monto: e.target.value }))} className={inputCls} placeholder={t('trips.expense.amount')} />
             <input value={newGasto.descripcion} onChange={e => setNewGasto(g => ({ ...g, descripcion: e.target.value }))} className={inputCls} placeholder={t('trips.expense.description')} />
-            <button onClick={addGasto} className="col-span-3 bg-gold/20 text-gold border border-gold-dim rounded-lg py-2 text-sm hover:bg-gold/30 transition-colors">{t('trips.expense.addExpense')}</button>
+            <button onClick={addGasto} className="sm:col-span-3 bg-gold/20 text-gold border border-gold-dim rounded-lg py-2 text-sm hover:bg-gold/30 transition-colors">{t('trips.expense.addExpense')}</button>
           </div>
           <div className="bg-surface-2 rounded-lg p-4 space-y-1 text-sm">
             <div className="flex justify-between"><span className="text-text-muted">{t('trips.detail.ingresos')}</span><span className="text-success">${ingresoTotal.toLocaleString('en-US')}</span></div>

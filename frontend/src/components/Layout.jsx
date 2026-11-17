@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -91,6 +92,7 @@ export function Layout({ children }) {
   const { user, logout } = useAuth()
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const { data: activeTrips = [] } = useQuery({
     queryKey: ['vueltas', 'activas'],
@@ -109,11 +111,22 @@ export function Layout({ children }) {
   }
 
   return (
-    <div className="flex h-screen bg-bg-base">
+    <div className="flex h-screen bg-bg-base overflow-hidden">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         style={{ width: 220, background: '#0c0c0c', borderRight: '1px solid rgba(255,255,255,0.06)' }}
-        className="flex-shrink-0 flex flex-col"
+        className={`fixed lg:static inset-y-0 left-0 z-40 flex-shrink-0 flex flex-col transition-transform duration-200 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0`}
       >
         {/* Logo */}
         <div style={{ padding: '18px 16px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -141,7 +154,11 @@ export function Layout({ children }) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto" style={{ paddingTop: 12, paddingBottom: 8 }}>
+        <nav
+          className="flex-1 overflow-y-auto"
+          style={{ paddingTop: 12, paddingBottom: 8 }}
+          onClick={() => setSidebarOpen(false)}
+        >
           {/* GENERAL */}
           <div style={{ marginBottom: 4 }}>
             <SectionLabel>{t('nav.sections.general')}</SectionLabel>
@@ -208,16 +225,25 @@ export function Layout({ children }) {
       </aside>
 
       {/* Content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Thin header — bell only */}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        {/* Thin header — hamburger (mobile) + bell */}
         <header
           style={{ height: 48, borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#0a0a0a' }}
-          className="flex items-center justify-end px-4 shrink-0"
+          className="flex items-center px-3 sm:px-4 shrink-0 gap-3"
         >
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden text-text-muted hover:text-text-primary transition-colors"
+            style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: -8 }}
+            aria-label={t('nav.openMenu', 'Open menu')}
+          >
+            <i className="ti ti-menu-2" style={{ fontSize: 22 }} />
+          </button>
+          <div className="flex-1" />
           <NotificacionesDropdown />
         </header>
 
-        <main className="flex-1 overflow-y-auto p-5">{children}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-5">{children}</main>
       </div>
     </div>
   )

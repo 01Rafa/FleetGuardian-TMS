@@ -119,7 +119,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-4">
       {/* Stat Cards */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <MiniStat label="Active Trips" value={stats?.vueltasActivas ?? 0} delta={null} />
         <MiniStat label="Week Income" value={`$ ${fmtMoney(stats?.ingresoSemana)}`} delta={incomeDelta} />
         <MiniStat label="Week Expense" value={`$ ${fmtMoney(stats?.gastoSemana)}`} delta={expenseDelta} inverted />
@@ -132,9 +132,9 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left column */}
-        <div className="col-span-2 space-y-4 min-w-0">
+        <div className="lg:col-span-2 space-y-4 min-w-0">
           {/* Active Trips */}
           <div className="bg-surface border border-border-dim rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">

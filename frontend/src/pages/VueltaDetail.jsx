@@ -252,7 +252,7 @@ export default function VueltaDetail() {
     <div className="space-y-6 max-w-4xl">
 
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h2 className="font-serif text-2xl text-text-primary">{vuelta.codigo}</h2>
@@ -349,7 +349,7 @@ export default function VueltaDetail() {
                   <p className="text-gold/70 text-xs mt-0.5">{t('trips.hints.usualTruck')} {conductores.find(c => c.id === infoForm.conductorPrincipalId)?.nombre}</p>
                 )}
               </div>
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 {!showConductor2 ? (
                   <button type="button" onClick={onShowConductor2Edit} className="text-text-muted text-xs hover:text-gold transition-colors">
                     {t('trips.detail.addSecondDriver')}
@@ -424,7 +424,7 @@ export default function VueltaDetail() {
 
         {(vuelta.tramos ?? []).map(tramo => (
           editingTramoId === tramo.id ? (
-            <div key={tramo.id} className="grid grid-cols-2 gap-2 p-3 bg-surface-2 rounded-lg border border-gold/30">
+            <div key={tramo.id} className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-surface-2 rounded-lg border border-gold/30">
               <input className={f} placeholder={t('trips.leg.origin')} value={tramoForm.origen} onChange={e => setTramoForm(s => ({ ...s, origen: e.target.value }))} />
               <input className={f} placeholder={t('trips.leg.destination')} value={tramoForm.destino} onChange={e => setTramoForm(s => ({ ...s, destino: e.target.value }))} />
               <BrokerAutocomplete key={editingTramoId} value={tramoForm.broker} onChange={broker => setTramoForm(s => ({ ...s, broker }))} placeholder={t('trips.leg.broker')} className={f} />
@@ -457,7 +457,7 @@ export default function VueltaDetail() {
               <input className={f} placeholder="Commodity (ej. Produce)" value={tramoForm.tipoCarga} onChange={e => setTramoForm(s => ({ ...s, tipoCarga: e.target.value }))} />
               <input className={f} placeholder="Equipo (ej. Reefer 53')" value={tramoForm.tipoEquipo} onChange={e => setTramoForm(s => ({ ...s, tipoEquipo: e.target.value }))} />
               <DateTimePicker value={tramoForm.fechaEntrega} onChange={v => setTramoForm(s => ({ ...s, fechaEntrega: v }))} />
-              <div className="col-span-2 flex gap-2">
+              <div className="sm:col-span-2 flex gap-2">
                 <button onClick={() => saveTramo(tramo.id)} disabled={updateTramoMutation.isPending}
                   className="bg-gold text-bg-deep font-semibold text-xs px-3 py-1.5 rounded-lg hover:opacity-90 disabled:opacity-50">
                   {updateTramoMutation.isPending ? t('common.saving') : t('common.save')}
@@ -466,8 +466,8 @@ export default function VueltaDetail() {
               </div>
             </div>
           ) : (
-            <div key={tramo.id} className="flex items-center gap-3 p-3 bg-surface-2 rounded-lg border border-border-dim text-sm">
-              <span className="flex-1 text-text-primary">{tramo.origen} → {tramo.destino}</span>
+            <div key={tramo.id} className="flex items-center gap-3 flex-wrap p-3 bg-surface-2 rounded-lg border border-border-dim text-sm">
+              <span className="flex-1 min-w-[140px] text-text-primary">{tramo.origen} → {tramo.destino}</span>
               <span className="text-text-muted text-xs">{tramo.tipo}{tramo.kmRecorridos ? ` · ${tramo.kmRecorridos} ${unit}` : ''}{tramo.broker ? ` · ${tramo.broker.nombre}` : ''}{tramo.numeroCarga ? ` · #${tramo.numeroCarga}` : ''}{tramo.tipoCarga ? ` · ${tramo.tipoCarga}` : ''}{tramo.tipoEquipo ? ` · ${tramo.tipoEquipo}` : ''}</span>
               {tramo.distanceMillas != null
                 ? <span className="text-text-muted text-xs">{tramo.distanceMillas.toFixed(1)} mi</span>
@@ -482,7 +482,7 @@ export default function VueltaDetail() {
         ))}
 
         {/* Add tramo form */}
-        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border-dim">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-border-dim">
           <input className={f} placeholder={t('trips.leg.origin')} value={newTramo.origen} onChange={e => setNewTramo(s => ({ ...s, origen: e.target.value }))} />
           <input className={f} placeholder={t('trips.leg.destination')} value={newTramo.destino} onChange={e => setNewTramo(s => ({ ...s, destino: e.target.value }))} />
           <BrokerAutocomplete value={newTramo.broker} onChange={broker => setNewTramo(s => ({ ...s, broker }))} placeholder={t('trips.leg.broker')} className={f} />
@@ -516,7 +516,7 @@ export default function VueltaDetail() {
           <input className={f} placeholder="Equipo (ej. Reefer 53')" value={newTramo.tipoEquipo} onChange={e => setNewTramo(s => ({ ...s, tipoEquipo: e.target.value }))} />
           <DateTimePicker value={newTramo.fechaEntrega} onChange={v => setNewTramo(s => ({ ...s, fechaEntrega: v }))} />
           <button onClick={addTramo} disabled={createTramoMutation.isPending}
-            className="col-span-2 bg-gold/20 text-gold border border-gold/30 rounded-lg text-sm hover:bg-gold/30 disabled:opacity-50 transition-colors py-1.5">
+            className="sm:col-span-2 bg-gold/20 text-gold border border-gold/30 rounded-lg text-sm hover:bg-gold/30 disabled:opacity-50 transition-colors py-1.5">
             {createTramoMutation.isPending ? t('trips.leg.adding') : t('trips.leg.addLeg')}
           </button>
         </div>
@@ -534,13 +534,13 @@ export default function VueltaDetail() {
 
           {(vuelta.gastos ?? []).map(g => (
             editingGastoId === g.id ? (
-              <div key={g.id} className="grid grid-cols-2 gap-2 p-2 bg-surface-2 rounded-lg border border-gold/30">
+              <div key={g.id} className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 bg-surface-2 rounded-lg border border-gold/30">
                 <select className={f} value={gastoForm.categoria} onChange={e => setGastoForm(s => ({ ...s, categoria: e.target.value }))}>
                   {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <input className={f} type="number" placeholder={t('trips.expense.amount')} value={gastoForm.monto} onChange={e => setGastoForm(s => ({ ...s, monto: e.target.value }))} />
-                <input className={`${f} col-span-2`} placeholder={t('trips.expense.description')} value={gastoForm.descripcion} onChange={e => setGastoForm(s => ({ ...s, descripcion: e.target.value }))} />
-                <div className="col-span-2 flex gap-2">
+                <input className={`${f} sm:col-span-2`} placeholder={t('trips.expense.description')} value={gastoForm.descripcion} onChange={e => setGastoForm(s => ({ ...s, descripcion: e.target.value }))} />
+                <div className="sm:col-span-2 flex gap-2">
                   <button onClick={() => saveGasto(g.id)} disabled={updateGastoMutation.isPending}
                     className="bg-gold text-bg-deep font-semibold text-xs px-3 py-1.5 rounded-lg hover:opacity-90 disabled:opacity-50">
                     {updateGastoMutation.isPending ? t('common.saving') : t('common.save')}
@@ -561,14 +561,14 @@ export default function VueltaDetail() {
           ))}
 
           {/* Add gasto form */}
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border-dim">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-border-dim">
             <select className={f} value={newGasto.categoria} onChange={e => setNewGasto(s => ({ ...s, categoria: e.target.value }))}>
               {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <input className={f} type="number" placeholder={t('trips.expense.amount')} value={newGasto.monto} onChange={e => setNewGasto(s => ({ ...s, monto: e.target.value }))} />
-            <input className={`${f} col-span-2`} placeholder={t('trips.expense.description')} value={newGasto.descripcion} onChange={e => setNewGasto(s => ({ ...s, descripcion: e.target.value }))} />
+            <input className={`${f} sm:col-span-2`} placeholder={t('trips.expense.description')} value={newGasto.descripcion} onChange={e => setNewGasto(s => ({ ...s, descripcion: e.target.value }))} />
             <button onClick={addGasto} disabled={createGastoMutation.isPending}
-              className="col-span-2 bg-gold/20 text-gold border border-gold/30 rounded-lg py-1.5 text-sm hover:bg-gold/30 disabled:opacity-50 transition-colors">
+              className="sm:col-span-2 bg-gold/20 text-gold border border-gold/30 rounded-lg py-1.5 text-sm hover:bg-gold/30 disabled:opacity-50 transition-colors">
               {createGastoMutation.isPending ? t('trips.expense.adding') : t('trips.expense.addExpense')}
             </button>
           </div>
