@@ -236,20 +236,20 @@ export default function Usuarios() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="font-serif text-2xl text-text-primary">Team Members</h2>
           <p className="text-text-muted text-sm mt-0.5">{users.length} user{users.length !== 1 ? 's' : ''} in your company</p>
         </div>
         <button
           onClick={() => setModal('invite')}
-          className="bg-gold text-bg-deep font-semibold px-4 py-2 rounded-lg hover:bg-gold/90 transition-colors text-sm"
+          className="bg-gold text-bg-deep font-semibold px-4 py-2 rounded-lg hover:bg-gold/90 transition-colors text-sm self-start sm:self-auto"
         >
           + Invite User
         </button>
       </div>
 
-      <div className="bg-surface border border-border-dim rounded-xl overflow-hidden">
+      <div className="bg-surface border border-border-dim rounded-xl overflow-hidden overflow-x-auto">
         {isLoading ? (
           <p className="text-text-muted text-sm p-6">Loading…</p>
         ) : (

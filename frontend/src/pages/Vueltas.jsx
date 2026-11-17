@@ -119,9 +119,9 @@ export default function Vueltas() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="font-serif text-2xl text-text-primary">{t('trips.title')}</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {selectMode ? (
             <>
               <button
@@ -223,7 +223,7 @@ export default function Vueltas() {
               </DndContext>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">{t('trips.detail.truck')}</label>
                 <select value={mergeForm.camionId} onChange={e => setMergeForm(f => ({ ...f, camionId: e.target.value }))} className={inputCls}>

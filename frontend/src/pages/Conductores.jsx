@@ -68,7 +68,7 @@ export default function Conductores() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="font-serif text-2xl text-text-primary">{t('drivers.title')}</h2>
         {!isViewer && (
           <button
